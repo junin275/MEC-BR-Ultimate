@@ -220,18 +220,7 @@ local function CreateGUI()
     footer.BackgroundTransparency = 1; footer.Text = "Chora_Argumento & Petrix © 2026"
     footer.TextColor3 = Color3.fromRGB(55, 55, 70); footer.Font = Enum.Font.Gotham; footer.TextSize = 9
 
-    -- BOTÃO FECHAR
-    local closeBtn = Instance.new("TextButton", mf)
-    closeBtn.Size = UDim2.new(0, 28, 0, 28); closeBtn.Position = UDim2.new(1, -36, 0, 8)
-    closeBtn.BackgroundTransparency = 1; closeBtn.Text = "✕"; closeBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    closeBtn.Font = Enum.Font.GothamBold; closeBtn.TextSize = 16; closeBtn.ZIndex = 5
-    closeBtn.MouseEnter:Connect(function()
-        TweenService:Create(closeBtn, TweenInfo.new(0.12), {TextColor3 = Color3.fromRGB(255, 70, 70)}):Play()
-    end)
-    closeBtn.MouseLeave:Connect(function()
-        TweenService:Create(closeBtn, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
-    end)
-    closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
+
 
     -- ===================== LÓGICA =====================
     local function animarBarra(p)
