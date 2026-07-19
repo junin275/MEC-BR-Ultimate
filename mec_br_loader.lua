@@ -1,46 +1,30 @@
--- =============================================================================
--- 🔑 MEC BR ULTIMATE | KEY SYSTEM LOADER v2.0
--- =============================================================================
--- Baseado em: OYB Key System (PlatoBoost + LootLabs)
--- Adaptado por: Chora_Argumento & Petrix
--- =============================================================================
--- INSTRUÇÕES DE PUBLICAÇÃO:
---   1. Crie 2 Gists no GitHub:
---      - Gist PÚBLICO: mec_br_main.lua   (script principal)
---      - Gist PRIVADO: credenciais.json   (ServiceId + PlatoSecret)
---   2. Cole as URLs raw nos Config abaixo
---   3. Injete ESTE arquivo (mec_br_loader.lua) no executor
--- =============================================================================
+--[[
+    🔑 MEC BR ULTIMATE v3.8 — LOADER + KEY SYSTEM + SCRIPT COMPLETO
+    by Chora_Argumento & Petrix
+    Baseado em OYB Key System (PlatoBoost + LootLabs)
+    
+    COMO USAR (loadstring):
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/junin275/MEC-BR-Ultimate/v3.8/mec_br_loader.lua'))()
+]]
 
 -- =============================================================================
 -- 🛠️ CONFIGURAÇÃO
 -- =============================================================================
 local Config = {
-    -- 🔴 CREDENCIAIS (Gist PRIVADO - NUNCA exponha)
-    CredenciaisURL  = "https://gist.github.com/junin275/7d81a1a50aeb65aa337cd09b35fd2a26", -- Mude pra URL do seu Gist PRIVADO
-
-    -- 📦 SCRIPT PRINCIPAL (Gist PÚBLICO)
-    MainScriptURL   = "https://gist.github.com/junin275/eb3bb4c7baf5e7f004a309980c815258", -- Mude pra URL do seu Gist PÚBLICO
-
-    -- 🔐 Segredo (deve ser IGUAL ao do mec_br_main.lua)
+    ServiceId       = 28226,
+    PlatoSecret     = "e27fdc82-cb92-4e77-9019-4c96ab19994b",
     Secret          = "MEC_BR_SECRET_2026",
-
-    -- 🎨 Interface
     HubName         = "MEC BR ULTIMATE",
     HubDescription  = "by Chora_Argumento & Petrix",
-
-    -- 🔗 Links (opcionais)
+    KeyFileName     = "MEC_Key.txt",
+    MainGuiName     = "",
+    OldGuiName      = "",
     ShowDiscord     = false,
-    DiscordURL      = "",
+    DiscordURL      = "https://discord.gg/7dkp6uhYNb",
     ShowInstagram   = false,
     InstagramURL    = "",
     ShowYoutube     = false,
     YoutubeURL      = "",
-
-    -- 💾 Cache local da key
-    KeyFileName     = "MEC_Key.txt",
-    OldGuiName      = "",
-    MainGuiName     = "",
 }
 
 -- =============================================================================
@@ -52,7 +36,6 @@ local lEncode, lDecode, lDigest = a3, aw, Z;
 -- =============================================================================
 -- 🌐 FUNÇÕES CENTRAIS
 -- =============================================================================
-
 local useNonce = true
 
 local function safeRequest(options)
@@ -65,15 +48,11 @@ end
 local fSetClipboard = setclipboard or toclipboard or function() end
 local fStringChar, fToString, fOsTime, fMathRandom, fMathFloor = string.char, tostring, os.time, math.random, math.floor
 local fGetHwid = gethwid or function() return game:GetService("RbxAnalyticsService"):GetClientId() end
-
-local cachedLink, cachedTime = "", 0
-local host = "https://api.platoboost.com"
+local cachedLink, cachedTime, host = "", 0, "https://api.platoboost.com"
 
 local function checkConnectivity()
     local response = safeRequest({Url = host .. "/public/connectivity", Method = "GET"})
-    if not response or (response.StatusCode ~= 200 and response.StatusCode ~= 429) then
-        host = "https://api.platoboost.net"
-    end
+    if not response or (response.StatusCode ~= 200 and response.StatusCode ~= 429) then host = "https://api.platoboost.net" end
 end
 checkConnectivity()
 
@@ -85,20 +64,8 @@ end
 
 local function cacheLink()
     if cachedTime + (10*60) < fOsTime() then
-        local response, err = safeRequest({
-            Url = host .. "/public/start",
-            Method = "POST",
-            Body = lEncode({service = Config.ServiceId, identifier = lDigest(fGetHwid())}),
-            Headers = {["Content-Type"] = "application/json"}
-        })
-        if response and response.StatusCode == 200 then
-            local decoded = lDecode(response.Body)
-            if decoded.success then
-                cachedLink = decoded.data.url
-                cachedTime = fOsTime()
-                return true, cachedLink
-            end
-        end
+        local response, err = safeRequest({Url = host .. "/public/start", Method = "POST", Body = lEncode({service = Config.ServiceId, identifier = lDigest(fGetHwid())}), Headers = {["Content-Type"] = "application/json"}})
+        if response and response.StatusCode == 200 then local decoded = lDecode(response.Body); if decoded.success then cachedLink = decoded.data.url; cachedTime = fOsTime(); return true, cachedLink end end
         return false, err or "Server Unreachable"
     end
     return true, cachedLink
@@ -108,174 +75,121 @@ local function redeemKey(key)
     local nonce = generateNonce()
     local body = {identifier = lDigest(fGetHwid()), key = key}
     if useNonce then body.nonce = nonce end
-    local response, err = safeRequest({
-        Url = host .. "/public/redeem/" .. fToString(Config.ServiceId),
-        Method = "POST",
-        Body = lEncode(body),
-        Headers = {["Content-Type"] = "application/json"}
-    })
+    local response, err = safeRequest({Url = host .. "/public/redeem/" .. fToString(Config.ServiceId), Method = "POST", Body = lEncode(body), Headers = {["Content-Type"] = "application/json"}})
     if response and response.StatusCode == 200 then
         local decoded = lDecode(response.Body)
         if decoded.success and decoded.data.valid then
             if useNonce then
                 if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. Config.PlatoSecret) then
-                    if writefile then writefile(Config.KeyFileName, key) end
-                    return true, "Success"
-                end
-                return false, "Integrity Check Failed"
+                    if writefile then writefile(Config.KeyFileName, key) end; return true, "Success"
+                end; return false, "Integrity Check Failed"
             end
-            if writefile then writefile(Config.KeyFileName, key) end
-            return true, "Success"
-        end
-        return false, decoded.message or "Invalid Key"
-    end
-    return false, err or "Server Error"
-end
-
--- =============================================================================
--- 🚀 CARREGAR CREDENCIAIS + EXECUTAR SCRIPT PRINCIPAL
--- =============================================================================
-
-local function CarregarCredenciais()
-    -- Tenta carregar credenciais da URL remota
-    local success, result = pcall(function()
-        return safeRequest({Url = Config.CredenciaisURL, Method = "GET"})
-    end)
-    if success and result and result.StatusCode == 200 then
-        local dados = lDecode(result.Body)
-        if dados and dados.ServiceId and dados.PlatoSecret then
-            Config.ServiceId = dados.ServiceId
-            Config.PlatoSecret = dados.PlatoSecret
-            return true
-        end
-    end
-    -- Se falhou, usa os valores padrão (caso esteja testando local)
-    return Config.ServiceId ~= 0 and Config.PlatoSecret ~= ""
-end
-
-local function StartMainScript()
-    _G[Config.Secret] = true
-
-    -- Tenta carregar de URL remota
-    if Config.MainScriptURL and Config.MainScriptURL ~= "" and not Config.MainScriptURL:find("SEU_USER") then
-        local success, result = pcall(function()
-            return loadstring(game:HttpGet(Config.MainScriptURL))()
-        end)
-        if success then return end
-        warn("[MEC BR] Falha ao carregar script remoto: " .. tostring(result))
-    end
-
-    -- Fallback: executa embutido
-    StartEmbeddedMECBR()
+            if writefile then writefile(Config.KeyFileName, key) end; return true, "Success"
+        end; return false, decoded.message or "Invalid Key"
+    end; return false, err or "Server Error"
 end
 
 -- =============================================================================
 -- 🖥️ INTERFACE GRÁFICA
 -- =============================================================================
-
 local function CreateGUI()
-    local player = game:GetService("Players").LocalPlayer
-    local coreGui = game:GetService("CoreGui")
+    local coreGui = game:GetService("CoreGui"); local player = game:GetService("Players").LocalPlayer
     local targetParent = pcall(function() return coreGui end) and coreGui or player:WaitForChild("PlayerGui")
-
     if targetParent:FindFirstChild("MEC_KeySystem") then targetParent.MEC_KeySystem:Destroy() end
 
-    local ScreenGui = Instance.new("ScreenGui", targetParent)
-    ScreenGui.Name = "MEC_KeySystem"; ScreenGui.ResetOnSpawn = false
-
+    local ScreenGui = Instance.new("ScreenGui", targetParent); ScreenGui.Name = "MEC_KeySystem"; ScreenGui.ResetOnSpawn = false
     local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 340, 0, 310); MainFrame.Position = UDim2.new(0.5, -170, 0.5, -155)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MainFrame.Active = true; MainFrame.Draggable = true
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
-    local mainStroke = Instance.new("UIStroke", MainFrame); mainStroke.Thickness = 2; mainStroke.Color = Color3.fromRGB(40, 40, 40)
+    MainFrame.Size = UDim2.new(0, 380, 0, 340); MainFrame.Position = UDim2.new(0.5, -190, 0.5, -170)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); MainFrame.Active = true; MainFrame.Draggable = true
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+    local stroke = Instance.new("UIStroke", MainFrame); stroke.Thickness = 2; stroke.Color = Color3.fromRGB(0, 200, 255)
+    task.spawn(function() while task.wait(0.05) do stroke.Color = Color3.fromHSV(tick()%5/5, 1, 1) end end)
 
-    local CloseBtn = Instance.new("TextButton", MainFrame)
-    CloseBtn.Size = UDim2.new(0, 30, 0, 30); CloseBtn.Position = UDim2.new(1, -35, 0, 10)
-    CloseBtn.BackgroundTransparency = 1; CloseBtn.Text = "X"; CloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
-    CloseBtn.Font = Enum.Font.GothamBold; CloseBtn.TextSize = 18; CloseBtn.ZIndex = 10
+    local CloseBtn = Instance.new("ImageButton", MainFrame)
+    CloseBtn.Size = UDim2.new(0, 30, 0, 30); CloseBtn.Position = UDim2.new(1, -38, 0, 8)
+    CloseBtn.BackgroundTransparency = 1; CloseBtn.Image = "rbxassetid://6031094678"; CloseBtn.ImageColor3 = Color3.fromRGB(255, 60, 60)
     CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-    local Title = Instance.new("TextLabel", MainFrame)
-    Title.Size = UDim2.new(1, 0, 0, 40); Title.Position = UDim2.new(0, 0, 0, 15)
-    Title.BackgroundTransparency = 1; Title.Text = "🔑 " .. Config.HubName
-    Title.TextColor3 = Color3.fromRGB(0, 200, 255); Title.Font = Enum.Font.GothamBold; Title.TextSize = 18
+    local Logo = Instance.new("TextLabel", MainFrame)
+    Logo.Size = UDim2.new(1, 0, 0, 50); Logo.Position = UDim2.new(0, 0, 0, 15)
+    Logo.BackgroundTransparency = 1; Logo.Text = "🚚 MEC BR ULTIMATE"
+    Logo.TextColor3 = Color3.fromRGB(0, 200, 255); Logo.Font = Enum.Font.GothamBlack; Logo.TextSize = 22
 
-    local Subtitle = Instance.new("TextLabel", MainFrame)
-    Subtitle.Size = UDim2.new(0.9, 0, 0, 20); Subtitle.Position = UDim2.new(0.05, 0, 0, 55)
-    Subtitle.BackgroundTransparency = 1; Subtitle.Text = Config.HubDescription
-    Subtitle.TextColor3 = Color3.fromRGB(0, 170, 255); Subtitle.Font = Enum.Font.GothamSemibold; Subtitle.TextSize = 13
+    local Sub = Instance.new("TextLabel", MainFrame)
+    Sub.Size = UDim2.new(1, 0, 0, 20); Sub.Position = UDim2.new(0, 0, 0, 62)
+    Sub.BackgroundTransparency = 1; Sub.Text = "by Chora_Argumento & Petrix"
+    Sub.TextColor3 = Color3.fromRGB(100, 180, 255); Sub.Font = Enum.Font.Gotham; Sub.TextSize = 12
 
-    local Line = Instance.new("Frame", MainFrame)
-    Line.Size = UDim2.new(0.85, 0, 0, 1); Line.Position = UDim2.new(0.075, 0, 0, 85)
-    Line.BackgroundColor3 = Color3.fromRGB(40, 40, 40); Line.BorderSizePixel = 0
+    local Line = Instance.new("Frame", MainFrame); Line.Size = UDim2.new(0.8, 0, 0, 1); Line.Position = UDim2.new(0.1, 0, 0, 90)
+    Line.BackgroundColor3 = Color3.fromRGB(40, 40, 60); Line.BorderSizePixel = 0
 
     local KeyInput = Instance.new("TextBox", MainFrame)
-    KeyInput.Size = UDim2.new(0.85, 0, 0, 40); KeyInput.Position = UDim2.new(0.075, 0, 0, 100)
-    KeyInput.PlaceholderText = "Enter your key..."; KeyInput.Text = ""
-    KeyInput.Font = Enum.Font.GothamSemibold; KeyInput.TextSize = 14
-    KeyInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25); KeyInput.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", KeyInput)
+    KeyInput.Size = UDim2.new(0.8, 0, 0, 42); KeyInput.Position = UDim2.new(0.1, 0, 0, 105)
+    KeyInput.PlaceholderText = "🔑 Cole sua key aqui..."; KeyInput.Text = ""
+    KeyInput.Font = Enum.Font.GothamSemibold; KeyInput.TextSize = 14; KeyInput.TextColor3 = Color3.new(1, 1, 1)
+    KeyInput.BackgroundColor3 = Color3.fromRGB(25, 25, 35); Instance.new("UICorner", KeyInput).CornerRadius = UDim.new(0, 8)
 
     local VerifyBtn = Instance.new("TextButton", MainFrame)
-    VerifyBtn.Size = UDim2.new(0.4, 0, 0, 40); VerifyBtn.Position = UDim2.new(0.075, 0, 0, 155)
-    VerifyBtn.Text = "VERIFY"; VerifyBtn.Font = Enum.Font.GothamBold; VerifyBtn.TextSize = 14
-    VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 255); VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", VerifyBtn)
+    VerifyBtn.Size = UDim2.new(0.38, 0, 0, 42); VerifyBtn.Position = UDim2.new(0.1, 0, 0, 162)
+    VerifyBtn.Text = "✅ VERIFY"; VerifyBtn.Font = Enum.Font.GothamBold; VerifyBtn.TextSize = 14
+    VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80); VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
+    Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 8)
 
     local GetKeyBtn = Instance.new("TextButton", MainFrame)
-    GetKeyBtn.Size = UDim2.new(0.4, 0, 0, 40); GetKeyBtn.Position = UDim2.new(0.525, 0, 0, 155)
-    GetKeyBtn.Text = "GET KEY"; GetKeyBtn.Font = Enum.Font.GothamBold; GetKeyBtn.TextSize = 14
-    GetKeyBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35); GetKeyBtn.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", GetKeyBtn)
+    GetKeyBtn.Size = UDim2.new(0.38, 0, 0, 42); GetKeyBtn.Position = UDim2.new(0.52, 0, 0, 162)
+    GetKeyBtn.Text = "🔗 GET KEY"; GetKeyBtn.Font = Enum.Font.GothamBold; GetKeyBtn.TextSize = 14
+    GetKeyBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50); GetKeyBtn.TextColor3 = Color3.new(1, 1, 1)
+    Instance.new("UICorner", GetKeyBtn).CornerRadius = UDim.new(0, 8)
 
     local Status = Instance.new("TextLabel", MainFrame)
-    Status.Name = "StatusLabel"; Status.Size = UDim2.new(1, 0, 0, 25); Status.Position = UDim2.new(0, 0, 0, 205)
-    Status.BackgroundTransparency = 1; Status.Text = "🔑 Aguardando chave..."
+    Status.Name = "StatusLabel"; Status.Size = UDim2.new(1, 0, 0, 30); Status.Position = UDim2.new(0, 0, 0, 215)
+    Status.BackgroundTransparency = 1; Status.Text = "🔑 Aguardando..."
     Status.TextColor3 = Color3.fromRGB(150, 150, 150); Status.Font = Enum.Font.Gotham; Status.TextSize = 12
 
-    task.spawn(function()
-        while task.wait() do
-            local hue = tick() % 5 / 5
-            mainStroke.Color = Color3.fromHSV(hue, 1, 1)
-            task.wait(0.05)
-        end
-    end)
+    local Footer = Instance.new("TextLabel", MainFrame)
+    Footer.Size = UDim2.new(1, 0, 0, 20); Footer.Position = UDim2.new(0, 0, 0, 310)
+    Footer.BackgroundTransparency = 1; Footer.Text = "🚀 Chora_Argumento & Petrix © 2026"
+    Footer.TextColor3 = Color3.fromRGB(60, 60, 60); Footer.Font = Enum.Font.Gotham; Footer.TextSize = 10
 
     VerifyBtn.MouseButton1Click:Connect(function()
         local key = KeyInput.Text
-        if key == "" then Status.Text = "❌ Enter a key!"; return end
-        Status.Text = "⏳ Verifying..."; Status.TextColor3 = Color3.fromRGB(255, 200, 0)
+        if key == "" then Status.Text = "❌ Digite uma key!"; Status.TextColor3 = Color3.fromRGB(255, 50, 50); return end
+        Status.Text = "⏳ Verificando..."; Status.TextColor3 = Color3.fromRGB(255, 200, 0)
         local success, msg = redeemKey(key)
         if success then
-            Status.Text = "✅ Key valid! Loading MEC BR..."; Status.TextColor3 = Color3.fromRGB(0, 255, 100)
-            task.wait(0.8); ScreenGui:Destroy(); StartMainScript()
+            Status.Text = "✅ Key válida! Carregando MEC BR..."; Status.TextColor3 = Color3.fromRGB(0, 255, 100)
+            task.wait(0.8); ScreenGui:Destroy()
+            _G[Config.Secret] = true; StartMECBR()
         else
             Status.Text = "❌ " .. msg; Status.TextColor3 = Color3.fromRGB(255, 50, 50)
         end
     end)
 
     GetKeyBtn.MouseButton1Click:Connect(function()
-        Status.Text = "⏳ Generating link..."; Status.TextColor3 = Color3.fromRGB(255, 200, 0)
+        Status.Text = "⏳ Gerando link..."; Status.TextColor3 = Color3.fromRGB(255, 200, 0)
         local success, link = cacheLink()
         if success then
-            fSetClipboard(link)
-            Status.Text = "✅ Link copied! Open in browser."; Status.TextColor3 = Color3.fromRGB(0, 200, 100)
+            pcall(function() setclipboard(link) end)
+            Status.Text = "✅ Link copiado! Abra no navegador e gere uma key."
+            Status.TextColor3 = Color3.fromRGB(0, 200, 100)
         else
-            Status.Text = "❌ Error: " .. tostring(link); Status.TextColor3 = Color3.fromRGB(255, 50, 50)
+            Status.Text = "❌ Erro: " .. tostring(link); Status.TextColor3 = Color3.fromRGB(255, 50, 50)
         end
     end)
 
     if isfile and isfile(Config.KeyFileName) then
         local savedKey = readfile(Config.KeyFileName)
         if savedKey ~= "" then
-            Status.Text = "⏳ Checking saved key..."
+            Status.Text = "⏳ Verificando key salva..."
             task.spawn(function()
                 local success, msg = redeemKey(savedKey)
                 if success then
-                    Status.Text = "✅ Auto-login success!"; Status.TextColor3 = Color3.fromRGB(0, 255, 100)
-                    task.wait(0.5); ScreenGui:Destroy(); StartMainScript()
+                    Status.Text = "✅ Auto-login!"; Status.TextColor3 = Color3.fromRGB(0, 255, 100)
+                    task.wait(0.5); ScreenGui:Destroy()
+                    _G[Config.Secret] = true; StartMECBR()
                 else
-                    Status.Text = "⌛ Saved key expired."; Status.TextColor3 = Color3.fromRGB(255, 150, 0)
+                    Status.Text = "⌛ Key expirada. Gere uma nova."
+                    Status.TextColor3 = Color3.fromRGB(255, 150, 0)
                 end
             end)
         end
@@ -283,21 +197,65 @@ local function CreateGUI()
 end
 
 -- =============================================================================
--- 🚀 INICIALIZAÇÃO
+-- 🚀 INICIAR
 -- =============================================================================
-
 local player = game:GetService("Players").LocalPlayer
 local pGui = player:WaitForChild("PlayerGui")
-
-if pGui:FindFirstChild(Config.MainGuiName) then StartMainScript(); return end
-
--- Carrega credenciais antes de criar a GUI
-local credsOk = CarregarCredenciais()
-if not credsOk then
-    print("[MEC BR] Aviso: Usando credenciais padrão. Configure CredenciaisURL!")
-end
-
+if pGui:FindFirstChild(Config.MainGuiName) then _G[Config.Secret] = true; StartMECBR(); return end
 CreateGUI()
 
--- Inclua aqui a função StartEmbeddedMECBR() com o código completo do MEC BR v3.8
--- (Esta função está no arquivo completo. Mantenha o bloco abaixo ou carregue via URL)
+-- =============================================================================
+-- ⬇️ MEC BR ULTIMATE v3.8 — CÓDIGO COMPLETO EMBUTIDO ⬇️
+-- =============================================================================
+function StartMECBR()
+    local Players = game:GetService("Players"); local RunService = game:GetService("RunService"); local Workspace = game:GetService("Workspace")
+    local LocalPlayer = Players.LocalPlayer; local TweenService = game:GetService("TweenService"); local Debris = game:GetService("Debris")
+    local SoundService = game:GetService("SoundService")
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+    local ultimaPosicao, localSelecionado, entregando, puxando = nil, nil, false, false
+    local grabbedParts, welds, isWelded = {}, {}, false
+    local StatusLabel, PosLabel, UltimaPosLabel, PecasLabel, AutoStatusLabel
+
+    local coordenadas = {{nome="Auto Peças",posicao=Vector3.new(-3335.28,65.69,-3400.30)},{nome="Posto de Gasolina",posicao=Vector3.new(-3232.68,66.07,-3704.04)},{nome="Ferro Velho",posicao=Vector3.new(-3131.48,65.67,-4247.97)},{nome="Drag",posicao=Vector3.new(-3900.53,64.81,-4890.13)},{nome="Concessionária",posicao=Vector3.new(-3041.93,65.49,-3694.85)},{nome="Construção",posicao=Vector3.new(-3649.34,65.17,-2504.47)},{nome="Entregas",posicao=Vector3.new(-25688.55,32.99,-5885.05)}}
+    local settings = {raioPuxar=50,alturaPilha=2.5,posicaoX=0,posicaoZ=3}
+    local SONS = {teleporte="rbxassetid://9120386890",pegar="rbxassetid://18376010604",soltar="rbxassetid://18376843770",sucesso="rbxassetid://15860705703",erro="rbxassetid://2760943325",scan="rbxassetid://13818331629",retorno="rbxassetid://9120386890"}
+
+    local function tocarSom(id,vol,parent) pcall(function() local s=Instance.new("Sound"); s.SoundId=id; s.Volume=vol or 0.5; s.Pitch=1+math.random(-10,10)/100; s.RollOffMode=Enum.RollOffMode.Linear; s.MaxDistance=100; s.Parent=parent or SoundService; s:Play(); Debris:AddItem(s,5) end) end
+    local function criarParticulas(cf,cor,qtd,duracao) pcall(function() local p=Instance.new("Part"); p.Size=Vector3.new(0.5,0.5,0.5); p.Transparency=1; p.CanCollide=false; p.Anchored=true; p.CFrame=cf; p.Parent=Workspace; Debris:AddItem(p,duracao or 3); local pe=Instance.new("ParticleEmitter"); pe.Texture="rbxassetid://4583316015"; pe.Color=ColorSequence.new(cor); pe.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,0.5),NumberSequenceKeypoint.new(1,0)}); pe.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0),NumberSequenceKeypoint.new(1,1)}); pe.Lifetime=NumberRange.new(0.5,1.5); pe.Rate=qtd or 50; pe.SpreadAngle=Vector2.new(-45,45); pe.VelocityInheritance=0; pe.Speed=NumberRange.new(2,6); pe.Acceleration=Vector3.new(0,-5,0); pe.Rotation=NumberRange.new(0,360); pe.RotSpeed=NumberRange.new(-180,180); pe.Drag=2; pe.LockedToPart=false; pe.Enabled=true; pe.Parent=p; Debris:AddItem(pe,duracao or 3) end) end
+    local function criarExplosaoVisual(cf,cor,tam) pcall(function() local a=Instance.new("Attachment"); a.WorldCFrame=cf; a.Parent=Workspace.Terrain; Debris:AddItem(a,3); local e=Instance.new("Explosion"); e.BlastRadius=tam or 8; e.BlastPressure=0; e.DestroyJointRadiusPercent=0; e.Visible=true; e.Position=cf.Position; e.Parent=Workspace; Debris:AddItem(e,3) end) end
+    local function criarEfeitoTeletransporte(personagem,destino) pcall(function() if not personagem then return end; local root=personagem:FindFirstChild("HumanoidRootPart"); if not root then return end; criarParticulas(root.CFrame,Color3.new(1,1,1),80,2); criarExplosaoVisual(root.CFrame,Color3.new(1,1,1),4); local bO=root.Position; local bT=destino; local dist=(bT-bO).Magnitude; if dist>0 and dist<10000 then local bp=Instance.new("Part"); bp.Size=Vector3.new(0.3,0.3,dist); bp.CFrame=CFrame.new(bO,bT)*CFrame.new(0,0,-dist/2); bp.Transparency=0.4; bp.Color=Color3.fromRGB(0,200,255); bp.Material=Enum.Material.Neon; bp.CanCollide=false; bp.Anchored=true; bp.Parent=Workspace; Debris:AddItem(bp,0.5); TweenService:Create(bp,TweenInfo.new(0.4,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Transparency=1}):Play() end; criarParticulas(CFrame.new(destino),Color3.fromRGB(0,200,255),60,2); criarExplosaoVisual(CFrame.new(destino),Color3.fromRGB(0,150,255),6) end) end
+
+    local function isTranspBox(part) if not part or not part.Parent then return false end; if part.Name~="TranspBox" then return false end; if part.Anchored then return false end; if part:IsDescendantOf(LocalPlayer.Character) then return false end; local p=part.Parent; while p do if p.Name=="GrabStuff" and p.Parent==Workspace then return true end; p=p.Parent end; return false end
+    local function isAlreadyGrabbed(part) for _,p in ipairs(grabbedParts) do if p==part then return true end end; return false end
+    local function limparPecasFantasma() local t={}; for i,p in ipairs(grabbedParts) do if not p or not p.Parent then table.insert(t,i) end end; if #t>0 then for i=#t,1,-1 do local idx=t[i]; local p2=grabbedParts[idx]; if welds[p2] then welds[p2]:Destroy(); welds[p2]=nil end; table.remove(grabbedParts,idx) end end end
+    local function weldGrabPart(part) if not part then return false end; if not isTranspBox(part) then return false end; if isAlreadyGrabbed(part) then return false end; local char=LocalPlayer.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if not root then return false end; part.CanCollide=false; part.Anchored=false; part.Massless=true; part.CustomPhysicalProperties=PhysicalProperties.new(0,0,0,0,0); part.Transparency=part.Transparency+0.15; local idx=#grabbedParts; local alt=idx*settings.alturaPilha+1.5; local w=Instance.new("Weld"); w.Part0=root; w.Part1=part; w.C0=CFrame.new(settings.posicaoX or 0,alt,settings.posicaoZ or 3); w.Parent=root; table.insert(grabbedParts,part); welds[part]=w; pcall(function() criarParticulas(CFrame.new(part.Position),Color3.fromRGB(0,255,200),20,0.8); local sp=Instance.new("Sparkles"); sp.SparkleColor=Color3.fromRGB(0,255,200); sp.Parent=part; Debris:AddItem(sp,1.5) end); return true end
+    local function atualizarPilha() if #grabbedParts==0 then return end; local char=LocalPlayer.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if not root then return end; limparPecasFantasma(); for idx,p in ipairs(grabbedParts) do if p and p.Parent and welds[p] then local alt=(idx-1)*settings.alturaPilha+1.5; welds[p].C0=CFrame.new(settings.posicaoX or 0,alt,settings.posicaoZ or 3) end end end
+    local function puxarPecas() if puxando then tocarSom(SONS.erro,0.4); return Rayfield:Notify({Title="⏳ Ocupado",Content="Aguarde...",Duration=2}) end; local char=LocalPlayer.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if not root then puxando=false; tocarSom(SONS.erro,0.5); return Rayfield:Notify({Title="❌ Erro",Content="HumanoidRootPart não encontrado.",Duration=3}) end; puxando=true; local count=0; local radius=settings.raioPuxar or 50; tocarSom(SONS.scan,0.3); Rayfield:Notify({Title="🧲 Scanner",Content="Raio: "..radius.." studs",Duration=2}); pcall(function() local pulse=Instance.new("Part"); pulse.Size=Vector3.new(0.2,0.2,0.2); pulse.Shape=Enum.PartType.Ball; pulse.Transparency=0.7; pulse.Color=Color3.fromRGB(0,255,200); pulse.Material=Enum.Material.Neon; pulse.CanCollide=false; pulse.Anchored=true; pulse.CFrame=root.CFrame; pulse.Parent=Workspace; Debris:AddItem(pulse,1.5); local pe=Instance.new("ParticleEmitter"); pe.Texture="rbxassetid://4583316015"; pe.Color=ColorSequence.new(Color3.fromRGB(0,255,200)); pe.Size=NumberSequence.new(0.5); pe.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.3),NumberSequenceKeypoint.new(1,1)}); pe.Lifetime=NumberRange.new(0.3,0.8); pe.Rate=200; pe.SpreadAngle=Vector2.new(-180,180); pe.Speed=NumberRange.new(radius*0.3,radius*0.8); pe.VelocityInheritance=0; pe.LockedToPart=true; pe.Enabled=true; pe.Parent=pulse; Debris:AddItem(pe,1.5) end); task.spawn(function() limparPecasFantasma(); local parts={}; local gs=Workspace:FindFirstChild("GrabStuff"); if gs then for _,v in ipairs(gs:GetDescendants()) do if v:IsA("BasePart") and v.Name=="TranspBox" and not v.Anchored and (v.Position-root.Position).Magnitude<radius and not isAlreadyGrabbed(v) then table.insert(parts,v) end end else for _,v in ipairs(Workspace:GetDescendants()) do if v:IsA("BasePart") and v.Name=="TranspBox" and not v.Anchored and (v.Position-root.Position).Magnitude<radius and not isAlreadyGrabbed(v) then table.insert(parts,v) end end end; for _,p in ipairs(parts) do if p and p.Parent and weldGrabPart(p) then count=count+1; task.wait(0.03) end end; isWelded=true; puxando=false; if count>0 then tocarSom(SONS.pegar,0.4); Rayfield:Notify({Title="✅ Sucesso",Content=count.." TranspBox soldadas!",Duration=3}) else tocarSom(SONS.erro,0.4); Rayfield:Notify({Title="❌ Nada",Content="Nenhuma TranspBox encontrada.",Duration=2}) end end) end
+    local function soltarPecas() local count=#grabbedParts; if count==0 then tocarSom(SONS.erro,0.3); Rayfield:Notify({Title="ℹ️ Info",Content="Nada para soltar.",Duration=2}); return end; isWelded=false; for _,p in ipairs(grabbedParts) do if welds[p] then welds[p]:Destroy(); welds[p]=nil end; if p and p.Parent then p.CanCollide=true; p.Massless=false; p.CustomPhysicalProperties=nil; p.Transparency=math.max(0,p.Transparency-0.15); p.Velocity=Vector3.new(0,0,0); pcall(function() criarParticulas(CFrame.new(p.Position),Color3.fromRGB(255,100,0),30,1); criarExplosaoVisual(CFrame.new(p.Position),Color3.fromRGB(255,100,0),3) end) end end; grabbedParts={}; welds={}; tocarSom(SONS.soltar,0.5); Rayfield:Notify({Title="🔄 Resetado",Content=count.." TranspBox soltas!",Duration=2}) end
+    local function entregar() if not localSelecionado then tocarSom(SONS.erro,0.5); return Rayfield:Notify({Title="❌ Erro",Content="Selecione um destino.",Duration=3}) end; if entregando then return end; local char=LocalPlayer.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if not root then entregando=false; tocarSom(SONS.erro,0.5); return Rayfield:Notify({Title="❌ Erro",Content="Personagem indisponível.",Duration=3}) end; entregando=true; ultimaPosicao=root.Position; tocarSom(SONS.teleporte,0.4); Rayfield:Notify({Title="🚚 Roteando",Content="Destino: "..localSelecionado.nome,Duration=2}); criarEfeitoTeletransporte(char,localSelecionado.posicao+Vector3.new(0,5,0)); task.wait(0.2); root.CFrame=CFrame.new(localSelecionado.posicao+Vector3.new(0,5,0)); root.Velocity=Vector3.new(0,0,0); root.AssemblyLinearVelocity=Vector3.new(0,0,0); task.wait(0.1); tocarSom(SONS.sucesso,0.5); Rayfield:Notify({Title="✅ Concluído",Content="Posicionado em: "..localSelecionado.nome,Duration=3}); entregando=false; if StatusLabel then StatusLabel:Set("✅ Última entrega: "..localSelecionado.nome) end end
+    local function voltar() if not ultimaPosicao then tocarSom(SONS.erro,0.5); return Rayfield:Notify({Title="❌ Erro",Content="Nenhum registro anterior.",Duration=3}) end; if entregando then return end; local char=LocalPlayer.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if not root then entregando=false; tocarSom(SONS.erro,0.5); return Rayfield:Notify({Title="❌ Erro",Content="Personagem indisponível.",Duration=2}) end; local destino=ultimaPosicao; tocarSom(SONS.retorno,0.4); Rayfield:Notify({Title="↩️ Retornando",Content="à origem.",Duration=2}); criarEfeitoTeletransporte(char,destino+Vector3.new(0,5,0)); task.wait(0.2); root.CFrame=CFrame.new(destino+Vector3.new(0,5,0)); root.Velocity=Vector3.new(0,0,0); root.AssemblyLinearVelocity=Vector3.new(0,0,0); task.wait(0.1); tocarSom(SONS.sucesso,0.5); Rayfield:Notify({Title="✅ Concluído",Content="Retorno executado.",Duration=3}); if StatusLabel then StatusLabel:Set("✅ Voltou à posição anterior") end end
+    local function entregarAutomatico() if entregando then return Rayfield:Notify({Title="⏳ Ocupado",Content="Aguarde.",Duration=2}) end; local char=LocalPlayer.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if not root then return Rayfield:Notify({Title="❌ Erro",Content="Personagem indisponível.",Duration=2}) end; local tj=Workspace:FindFirstChild("TransportJobWorkings"); if not tj then tocarSom(SONS.erro,0.5); return Rayfield:Notify({Title="❌ Erro",Content="TransportJobWorkings não encontrado.",Duration=3}) end; local dests=tj:FindFirstChild("Destinations"); if not dests then tocarSom(SONS.erro,0.5); return Rayfield:Notify({Title="❌ Erro",Content="Destinations ausente.",Duration=3}) end; local validas, inativas={},{}; for _,df in ipairs(dests:GetChildren()) do if df:IsA("Folder") or df:IsA("Model") then local da=df:FindFirstChild("DropArea"); local det=df:FindFirstChild("Details"); local dec,sp=nil,nil; if det then dec=det:FindFirstChild("Decal"); sp=det:FindFirstChild("Spin") else dec=df:FindFirstChild("Decal"); sp=df:FindFirstChild("Spin") end; if da and da:IsA("BasePart") and dec and sp then table.insert(validas,{nome=df.Name,posicao=da.Position}) end end end; if #validas==0 then tocarSom(SONS.erro,0.5); return Rayfield:Notify({Title="❌ Nenhum destino ativo",Content="Aguarde ativação.",Duration=4}) end; local escolhido,menor=nil,math.huge; for _,area in ipairs(validas) do local dist=(area.posicao-root.Position).Magnitude; if dist<menor then menor=dist; escolhido=area end end; if not escolhido then tocarSom(SONS.erro,0.5); return Rayfield:Notify({Title="❌ Erro",Content="Seleção falhou.",Duration=2}) end; entregando=true; ultimaPosicao=root.Position; tocarSom(SONS.teleporte,0.4); Rayfield:Notify({Title="🚀 Auto Entrega",Content="Indo para "..escolhido.nome,Duration=2}); criarEfeitoTeletransporte(char,escolhido.posicao+Vector3.new(0,3,0)); task.wait(0.2); root.CFrame=CFrame.new(escolhido.posicao+Vector3.new(0,3,0)); root.Velocity=Vector3.new(0,0,0); root.AssemblyLinearVelocity=Vector3.new(0,0,0); tocarSom(SONS.sucesso,0.5); Rayfield:Notify({Title="✅ Chegou",Content=escolhido.nome,Duration=4}); entregando=false; if StatusLabel then StatusLabel:Set("✅ Entregue em: "..escolhido.nome) end end
+
+    local Window=Rayfield:CreateWindow({Name="🚚 MEC BR ULTIMATE | v3.8",Icon=0,LoadingTitle="Inicializando...",LoadingSubtitle="by Chora_Argumento & Petrix",Theme="Ocean",ToggleUIKeybind="K",ConfigurationSaving={Enabled=true,FileName="MEC_Config"},Discord={Enabled=false},KeySystem=false})
+    local MagnetTab=Window:CreateTab("🧲 Magnético",0); local EntregaTab=Window:CreateTab("🚚 Entrega",0); local CoordTab=Window:CreateTab("📍 Coordenadas",0); local InfoTab=Window:CreateTab("ℹ️ Info",0)
+    MagnetTab:CreateSection("🧲 Controle"); MagnetTab:CreateButton({Name="🧲 PEGAR TRANSPBOX",Callback=puxarPecas}); MagnetTab:CreateButton({Name="❌ SOLTAR TRANSPBOX",Callback=soltarPecas})
+    MagnetTab:CreateSection("⚙️ Ajustes"); MagnetTab:CreateSlider({Name="📡 Raio",Range={10,100},Increment=5,Suffix=" studs",CurrentValue=settings.raioPuxar,Flag="Raio",Callback=function(v)settings.raioPuxar=v end}); MagnetTab:CreateSlider({Name="📏 Altura",Range={1,6},Increment=0.5,Suffix=" studs",CurrentValue=settings.alturaPilha,Flag="Altura",Callback=function(v)settings.alturaPilha=v;atualizarPilha()end}); MagnetTab:CreateSlider({Name="📏 Distância",Range={1,10},Increment=0.5,Suffix=" studs",CurrentValue=3,Flag="Dist",Callback=function(v)settings.posicaoZ=v;atualizarPilha()end})
+    MagnetTab:CreateSection("📊 Status"); PecasLabel=MagnetTab:CreateLabel("📦 TranspBox: 0"); task.spawn(function() while true do task.wait(0.5); if PecasLabel then PecasLabel:Set("📦 TranspBox: "..#grabbedParts..(isWelded and " ✅" or " ⏸")) end end end)
+    EntregaTab:CreateSection("📍 Destino"); local opcoes={}; for i,d in ipairs(coordenadas) do table.insert(opcoes,i..". "..d.nome) end; EntregaTab:CreateDropdown({Name="Selecione",Options=opcoes,CurrentOption={},MultipleOptions=false,Flag="Dest",Callback=function(o)if #o>0 then local idx=tonumber(string.match(o[1],"^(%d+)")); if idx then localSelecionado=coordenadas[idx] end end end})
+    EntregaTab:CreateSection("⚡ Ações"); EntregaTab:CreateButton({Name="🚚 INICIAR TRANSPORTE",Callback=entregar}); EntregaTab:CreateButton({Name="↩️ RETORNAR",Callback=voltar})
+    EntregaTab:CreateSection("🧪 Experimental"); EntregaTab:CreateButton({Name="🚀 ENTREGA AUTO",Callback=entregarAutomatico}); AutoStatusLabel=EntregaTab:CreateLabel("🤖 Status: Aguardando...")
+    EntregaTab:CreateSection("📊 Telemetria"); StatusLabel=EntregaTab:CreateLabel("✅ Aguardando..."); PosLabel=EntregaTab:CreateLabel("📍 Carregando..."); UltimaPosLabel=EntregaTab:CreateLabel("📌 Nenhuma.")
+    CoordTab:CreateSection("📋 Coordenadas"); for i,d in ipairs(coordenadas) do CoordTab:CreateLabel(string.format("%d. %s\n   [X: %.2f | Y: %.2f | Z: %.2f]",i,d.nome,d.posicao.X,d.posicao.Y,d.posicao.Z)) end
+    CoordTab:CreateButton({Name="📋 EXPORTAR",Callback=function() local t=""; for i,d in ipairs(coordenadas) do t=t..string.format("%d. %s -> Vector3.new(%.2f, %.2f, %.2f)\n",i,d.nome,d.posicao.X,d.posicao.Y,d.posicao.Z) end; local ok=pcall(function()setclipboard(t)end); Rayfield:Notify({Title=ok and "📋 Ok" or "❌ Falha",Content=ok and "Copiado!" or "Sem permissão.",Duration=3}) end})
+    InfoTab:CreateSection("⚙️ Sistema"); InfoTab:CreateLabel("• v3.8.0-pro"); InfoTab:CreateLabel("• Rayfield UI"); InfoTab:CreateLabel("• Weld (TranspBox)"); InfoTab:CreateLabel("• CFrame Teleport"); InfoTab:CreateLabel("• Som + Partículas"); InfoTab:CreateLabel("• PlatoBoost Key System"); InfoTab:CreateSection("👨‍💻 Desenvolvedores"); InfoTab:CreateLabel("• Chora_Argumento"); InfoTab:CreateLabel("• Petrix"); InfoTab:CreateLabel("• discord.gg/7dkp6uhYNb"); InfoTab:CreateSection("📦 Alvo"); InfoTab:CreateLabel("• TranspBox"); InfoTab:CreateLabel("• Workspace.GrabStuff"); InfoTab:CreateLabel("• -25705, 31, -5854")
+    local CreditsTab=Window:CreateTab("👨‍💻 Créditos",0); CreditsTab:CreateSection("🎮 Devs"); CreditsTab:CreateLabel("👨‍💻 Chora_Argumento"); CreditsTab:CreateLabel("👨‍💻 Petrix"); CreditsTab:CreateSection("📚 Libs"); CreditsTab:CreateLabel("• Rayfield"); CreditsTab:CreateLabel("• OYB Key System"); CreditsTab:CreateButton({Name="📋 COPIAR DISCORD",Callback=function()pcall(function()setclipboard("https://discord.gg/7dkp6uhYNb")end); Rayfield:Notify({Title="📋 Copiado!",Duration=2})end}); CreditsTab:CreateSection("⚠️ Aviso"); CreditsTab:CreateLabel("Use com responsabilidade!"); CreditsTab:CreateLabel("Respeite os jogadores!"); CreditsTab:CreateLabel("💀 2026 - Todos os direitos reservados")
+
+    RunService.Heartbeat:Connect(function() pcall(function() local char=LocalPlayer.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if root and PosLabel then local p=root.Position; PosLabel:Set(string.format("📍 Pos: %.1f, %.1f, %.1f",p.X,p.Y,p.Z)) end; if UltimaPosLabel then UltimaPosLabel:Set(ultimaPosicao and string.format("📌 Última: %.1f, %.1f, %.1f",ultimaPosicao.X,ultimaPosicao.Y,ultimaPosicao.Z) or "📌 Nenhuma") end; if #grabbedParts>0 then limparPecasFantasma() end end) end)
+    task.spawn(function() while true do task.wait(2); if isWelded and #grabbedParts>0 then pcall(atualizarPilha) end end end)
+    LocalPlayer.CharacterAdded:Connect(function() isWelded=false;puxando=false;entregando=false; for _,p in ipairs(grabbedParts) do if welds[p] then welds[p]:Destroy();welds[p]=nil end; if p and p.Parent then p.CanCollide=true;p.Massless=false;p.CustomPhysicalProperties=nil;p.Transparency=math.max(0,(p.Transparency or 0)-0.15) end end; grabbedParts={};welds={} end)
+    local function onCleanup() isWelded=false;puxando=false;entregando=false; for _,p in ipairs(grabbedParts) do if welds[p] then pcall(function()welds[p]:Destroy()end);welds[p]=nil end end; grabbedParts={};welds={} end; pcall(function()if LocalPlayer.OnCleanup then LocalPlayer.OnCleanup:Connect(onCleanup)end end)
+
+    print("========================================"); print("🚀 MEC BR ULTIMATE - v3.8"); print("👨‍💻 Chora_Argumento & Petrix"); print("========================================"); print("[Key System: PlatoBoost]"); print("[Alvo: TranspBox]"); print("========================================")
+    Rayfield:Notify({Title="🚀 MEC BR ULTIMATE v3.8",Content="📦 Carregado com sucesso!",Duration=5}); Rayfield:Notify({Title="⚠️ AVISO",Content="Use com responsabilidade!",Duration=5})
+end
