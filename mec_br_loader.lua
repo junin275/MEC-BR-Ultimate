@@ -90,106 +90,217 @@ local function redeemKey(key)
 end
 
 -- =============================================================================
--- 🖥️ INTERFACE GRÁFICA
+-- 🖥️ INTERFACE GRÁFICA PREMIUM
 -- =============================================================================
 local function CreateGUI()
     local coreGui = game:GetService("CoreGui"); local player = game:GetService("Players").LocalPlayer
+    local uiStroke = Instance.new("UIStroke"); local uiCorner = Instance.new("UICorner")
     local targetParent = pcall(function() return coreGui end) and coreGui or player:WaitForChild("PlayerGui")
     if targetParent:FindFirstChild("MEC_KeySystem") then targetParent.MEC_KeySystem:Destroy() end
 
-    local ScreenGui = Instance.new("ScreenGui", targetParent); ScreenGui.Name = "MEC_KeySystem"; ScreenGui.ResetOnSpawn = false
-    local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 380, 0, 340); MainFrame.Position = UDim2.new(0.5, -190, 0.5, -170)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); MainFrame.Active = true; MainFrame.Draggable = true
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
-    local stroke = Instance.new("UIStroke", MainFrame); stroke.Thickness = 2; stroke.Color = Color3.fromRGB(0, 200, 255)
-    task.spawn(function() while task.wait(0.05) do stroke.Color = Color3.fromHSV(tick()%5/5, 1, 1) end end)
+    local sg = Instance.new("ScreenGui", targetParent); sg.Name = "MEC_KeySystem"; sg.ResetOnSpawn = false; sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    local CloseBtn = Instance.new("ImageButton", MainFrame)
-    CloseBtn.Size = UDim2.new(0, 30, 0, 30); CloseBtn.Position = UDim2.new(1, -38, 0, 8)
-    CloseBtn.BackgroundTransparency = 1; CloseBtn.Image = "rbxassetid://6031094678"; CloseBtn.ImageColor3 = Color3.fromRGB(255, 60, 60)
-    CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+    -- Background escuro com blur
+    local bg = Instance.new("Frame", sg)
+    bg.Size = UDim2.new(1, 0, 1, 0); bg.BackgroundColor3 = Color3.new(0, 0, 0); bg.BackgroundTransparency = 0.45
+    bg.BorderSizePixel = 0; bg.Active = true
 
-    local Logo = Instance.new("TextLabel", MainFrame)
-    Logo.Size = UDim2.new(1, 0, 0, 50); Logo.Position = UDim2.new(0, 0, 0, 15)
-    Logo.BackgroundTransparency = 1; Logo.Text = "🚚 MEC BR ULTIMATE"
-    Logo.TextColor3 = Color3.fromRGB(0, 200, 255); Logo.Font = Enum.Font.GothamBlack; Logo.TextSize = 22
+    -- Main container — glassmorphism
+    local mf = Instance.new("Frame", sg)
+    mf.Size = UDim2.new(0, 420, 0, 370); mf.Position = UDim2.new(0.5, -210, 0.5, -185)
+    mf.BackgroundColor3 = Color3.fromRGB(8, 8, 12); mf.BackgroundTransparency = 0.08
+    mf.Active = true; mf.Draggable = true; mf.ClipsDescendants = true
+    uiCorner = Instance.new("UICorner", mf); uiCorner.CornerRadius = UDim.new(0, 18)
 
-    local Sub = Instance.new("TextLabel", MainFrame)
-    Sub.Size = UDim2.new(1, 0, 0, 20); Sub.Position = UDim2.new(0, 0, 0, 62)
-    Sub.BackgroundTransparency = 1; Sub.Text = "by Chora_Argumento & Petrix"
-    Sub.TextColor3 = Color3.fromRGB(100, 180, 255); Sub.Font = Enum.Font.Gotham; Sub.TextSize = 12
-
-    local Line = Instance.new("Frame", MainFrame); Line.Size = UDim2.new(0.8, 0, 0, 1); Line.Position = UDim2.new(0.1, 0, 0, 90)
-    Line.BackgroundColor3 = Color3.fromRGB(40, 40, 60); Line.BorderSizePixel = 0
-
-    local KeyInput = Instance.new("TextBox", MainFrame)
-    KeyInput.Size = UDim2.new(0.8, 0, 0, 42); KeyInput.Position = UDim2.new(0.1, 0, 0, 105)
-    KeyInput.PlaceholderText = "🔑 Cole sua key aqui..."; KeyInput.Text = ""
-    KeyInput.Font = Enum.Font.GothamSemibold; KeyInput.TextSize = 14; KeyInput.TextColor3 = Color3.new(1, 1, 1)
-    KeyInput.BackgroundColor3 = Color3.fromRGB(25, 25, 35); Instance.new("UICorner", KeyInput).CornerRadius = UDim.new(0, 8)
-
-    local VerifyBtn = Instance.new("TextButton", MainFrame)
-    VerifyBtn.Size = UDim2.new(0.38, 0, 0, 42); VerifyBtn.Position = UDim2.new(0.1, 0, 0, 162)
-    VerifyBtn.Text = "✅ VERIFY"; VerifyBtn.Font = Enum.Font.GothamBold; VerifyBtn.TextSize = 14
-    VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80); VerifyBtn.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 8)
-
-    local GetKeyBtn = Instance.new("TextButton", MainFrame)
-    GetKeyBtn.Size = UDim2.new(0.38, 0, 0, 42); GetKeyBtn.Position = UDim2.new(0.52, 0, 0, 162)
-    GetKeyBtn.Text = "🔗 GET KEY"; GetKeyBtn.Font = Enum.Font.GothamBold; GetKeyBtn.TextSize = 14
-    GetKeyBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50); GetKeyBtn.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", GetKeyBtn).CornerRadius = UDim.new(0, 8)
-
-    local Status = Instance.new("TextLabel", MainFrame)
-    Status.Name = "StatusLabel"; Status.Size = UDim2.new(1, 0, 0, 30); Status.Position = UDim2.new(0, 0, 0, 215)
-    Status.BackgroundTransparency = 1; Status.Text = "🔑 Aguardando..."
-    Status.TextColor3 = Color3.fromRGB(150, 150, 150); Status.Font = Enum.Font.Gotham; Status.TextSize = 12
-
-    local Footer = Instance.new("TextLabel", MainFrame)
-    Footer.Size = UDim2.new(1, 0, 0, 20); Footer.Position = UDim2.new(0, 0, 0, 310)
-    Footer.BackgroundTransparency = 1; Footer.Text = "🚀 Chora_Argumento & Petrix © 2026"
-    Footer.TextColor3 = Color3.fromRGB(60, 60, 60); Footer.Font = Enum.Font.Gotham; Footer.TextSize = 10
-
-    VerifyBtn.MouseButton1Click:Connect(function()
-        local key = KeyInput.Text
-        if key == "" then Status.Text = "❌ Digite uma key!"; Status.TextColor3 = Color3.fromRGB(255, 50, 50); return end
-        Status.Text = "⏳ Verificando..."; Status.TextColor3 = Color3.fromRGB(255, 200, 0)
-        local success, msg = redeemKey(key)
-        if success then
-            Status.Text = "✅ Key válida! Carregando MEC BR..."; Status.TextColor3 = Color3.fromRGB(0, 255, 100)
-            task.wait(0.8); ScreenGui:Destroy()
-            _G[Config.Secret] = true; StartMECBR()
-        else
-            Status.Text = "❌ " .. msg; Status.TextColor3 = Color3.fromRGB(255, 50, 50)
+    -- Glow interno (borda neon pulsante)
+    local glow = Instance.new("Frame", mf)
+    glow.Size = UDim2.new(1, 4, 1, 4); glow.Position = UDim2.new(0, -2, 0, -2)
+    glow.BackgroundColor3 = Color3.fromRGB(0, 180, 255); glow.BackgroundTransparency = 0.85
+    glow.BorderSizePixel = 0; glow.ZIndex = -1
+    task.spawn(function()
+        while task.wait(0.06) do
+            glow.BackgroundColor3 = Color3.fromHSV(tick() % 4 / 4, 0.8, 1)
+            task.spawn(function() TweenService:Create(glow, TweenInfo.new(0.3), {BackgroundTransparency = 0.7 + math.sin(tick() * 2) * 0.12}):Play() end)
         end
     end)
 
-    GetKeyBtn.MouseButton1Click:Connect(function()
-        Status.Text = "⏳ Gerando link..."; Status.TextColor3 = Color3.fromRGB(255, 200, 0)
+    -- Barra superior decorativa
+    local topBar = Instance.new("Frame", mf)
+    topBar.Size = UDim2.new(1, 0, 0, 4); topBar.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
+    topBar.BorderSizePixel = 0; topBar.ZIndex = 2
+    Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 18)
+    task.spawn(function() while task.wait(0.05) do topBar.BackgroundColor3 = Color3.fromHSV(tick() % 4 / 4, 0.8, 1) end end)
+
+    -- Header com gradiente (simulado com ImageLabel)
+    local header = Instance.new("ImageLabel", mf)
+    header.Size = UDim2.new(1, 0, 0, 80); header.BackgroundTransparency = 1
+    header.Image = "rbxassetid://16534020116"; header.ImageTransparency = 0.85; header.ScaleType = Enum.ScaleType.Slice
+
+    -- Logo animado
+    local logo = Instance.new("TextLabel", mf)
+    logo.Size = UDim2.new(1, 0, 0, 36); logo.Position = UDim2.new(0, 0, 0, 16)
+    logo.BackgroundTransparency = 1; logo.Text = "🚚 MEC BR ULTIMATE"
+    logo.TextColor3 = Color3.new(1, 1, 1); logo.Font = Enum.Font.GothamBlack; logo.TextSize = 24
+    logo.TextTransparency = 0.08
+
+    -- Slogan
+    local sub = Instance.new("TextLabel", mf)
+    sub.Size = UDim2.new(1, 0, 0, 18); sub.Position = UDim2.new(0, 0, 0, 52)
+    sub.BackgroundTransparency = 1; sub.Text = "⚡ by Chora_Argumento & Petrix"
+    sub.TextColor3 = Color3.fromRGB(100, 180, 255); sub.Font = Enum.Font.Gotham; sub.TextSize = 12
+    sub.TextTransparency = 0.2
+
+    -- Separador sutil
+    local sep = Instance.new("Frame", mf)
+    sep.Size = UDim2.new(0.7, 0, 0, 1); sep.Position = UDim2.new(0.15, 0, 0, 90)
+    sep.BackgroundColor3 = Color3.fromRGB(40, 40, 60); sep.BorderSizePixel = 0
+    local sepGlow = Instance.new("Frame", mf)
+    sepGlow.Size = UDim2.new(0.3, 0, 0, 1); sepGlow.Position = UDim2.new(0.35, 0, 0, 90)
+    sepGlow.BackgroundColor3 = Color3.fromRGB(0, 180, 255); sepGlow.BorderSizePixel = 0
+    sepGlow.BackgroundTransparency = 0.5
+
+    -- Input field com ícone
+    local inputIcon = Instance.new("TextLabel", mf)
+    inputIcon.Size = UDim2.new(0, 24, 0, 24); inputIcon.Position = UDim2.new(0.1, 0, 0, 108)
+    inputIcon.BackgroundTransparency = 1; inputIcon.Text = "🔑"; inputIcon.TextSize = 16
+    inputIcon.Font = Enum.Font.Gotham; inputIcon.TextColor3 = Color3.new(1, 1, 1)
+
+    local ki = Instance.new("TextBox", mf)
+    ki.Size = UDim2.new(0.75, 0, 0, 44); ki.Position = UDim2.new(0.15, 10, 0, 102)
+    ki.PlaceholderText = "Cole sua key aqui..."; ki.Text = ""
+    ki.Font = Enum.Font.GothamSemibold; ki.TextSize = 15; ki.TextColor3 = Color3.new(1, 1, 1)
+    ki.BackgroundColor3 = Color3.fromRGB(18, 18, 26); ki.ClearTextOnFocus = false
+    uiCorner = Instance.new("UICorner", ki); uiCorner.CornerRadius = UDim.new(0, 10)
+    uiStroke = Instance.new("UIStroke", ki); uiStroke.Thickness = 1.5; uiStroke.Color = Color3.fromRGB(30, 30, 50)
+
+    ki.FocusLost:Connect(function() end)
+
+    -- Botão VERIFY com gradiente e glow
+    local vb = Instance.new("TextButton", mf)
+    vb.Size = UDim2.new(0.35, 0, 0, 44); vb.Position = UDim2.new(0.12, 0, 0, 165)
+    vb.Text = "  ✅  VERIFY"; vb.Font = Enum.Font.GothamBold; vb.TextSize = 14
+    vb.BackgroundColor3 = Color3.fromRGB(0, 190, 80); vb.TextColor3 = Color3.new(1, 1, 1); vb.TextXAlignment = Enum.TextXAlignment.Center
+    uiCorner = Instance.new("UICorner", vb); uiCorner.CornerRadius = UDim.new(0, 10)
+    local vGlow = Instance.new("Frame", vb); vGlow.Size = UDim2.new(1, 6, 1, 6); vGlow.Position = UDim2.new(0, -3, 0, -3)
+    vGlow.BackgroundColor3 = Color3.fromRGB(0, 190, 80); vGlow.BackgroundTransparency = 0.7; vGlow.BorderSizePixel = 0; vGlow.ZIndex = -1
+    Instance.new("UICorner", vGlow).CornerRadius = UDim.new(0, 12)
+
+    local vbHover = false
+    vb.MouseEnter:Connect(function() vbHover = true; TweenService:Create(vb, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 220, 100)}):Play(); TweenService:Create(vGlow, TweenInfo.new(0.3), {BackgroundTransparency = 0.5, Size = UDim2.new(1, 10, 1, 10)}):Play() end)
+    vb.MouseLeave:Connect(function() vbHover = false; TweenService:Create(vb, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 190, 80)}):Play(); TweenService:Create(vGlow, TweenInfo.new(0.3), {BackgroundTransparency = 0.7, Size = UDim2.new(1, 6, 1, 6)}):Play() end)
+
+    -- Botão GET KEY
+    local gb = Instance.new("TextButton", mf)
+    gb.Size = UDim2.new(0.35, 0, 0, 44); gb.Position = UDim2.new(0.53, 0, 0, 165)
+    gb.Text = "  🔗  GET KEY"; gb.Font = Enum.Font.GothamBold; gb.TextSize = 14
+    gb.BackgroundColor3 = Color3.fromRGB(25, 25, 40); gb.TextColor3 = Color3.new(1, 1, 1)
+    uiCorner = Instance.new("UICorner", gb); uiCorner.CornerRadius = UDim.new(0, 10)
+    uiStroke = Instance.new("UIStroke", gb); uiStroke.Thickness = 1.5; uiStroke.Color = Color3.fromRGB(40, 40, 70)
+
+    gb.MouseEnter:Connect(function() TweenService:Create(gb, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(35, 35, 55)}):Play() end)
+    gb.MouseLeave:Connect(function() TweenService:Create(gb, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(25, 25, 40)}):Play() end)
+
+    -- Status com animação
+    local st = Instance.new("TextLabel", mf)
+    st.Name = "StatusLabel"; st.Size = UDim2.new(1, 0, 0, 28); st.Position = UDim2.new(0, 0, 0, 225)
+    st.BackgroundTransparency = 1; st.Text = "🔑  Aguardando chave..."
+    st.TextColor3 = Color3.fromRGB(140, 140, 160); st.Font = Enum.Font.Gotham; st.TextSize = 13
+    st.TextTransparency = 0.15
+
+    -- Loading bar animada (invisível até usar)
+    local loadBar = Instance.new("Frame", mf)
+    loadBar.Name = "LoadBar"; loadBar.Size = UDim2.new(0, 0, 0, 3); loadBar.Position = UDim2.new(0.12, 0, 0, 260)
+    loadBar.BackgroundColor3 = Color3.fromRGB(0, 180, 255); loadBar.BorderSizePixel = 0
+    uiCorner = Instance.new("UICorner", loadBar); uiCorner.CornerRadius = UDim.new(0, 4)
+    loadBar.BackgroundTransparency = 1
+
+    -- Footer
+    local ft = Instance.new("TextLabel", mf)
+    ft.Size = UDim2.new(1, 0, 0, 18); ft.Position = UDim2.new(0, 0, 0, 340)
+    ft.BackgroundTransparency = 1; ft.Text = "🚀 Chora_Argumento & Petrix © 2026"
+    ft.TextColor3 = Color3.fromRGB(60, 60, 75); ft.Font = Enum.Font.Gotham; ft.TextSize = 10
+
+    -- Close button (X) com hover
+    local cb = Instance.new("TextButton", mf)
+    cb.Size = UDim2.new(0, 32, 0, 32); cb.Position = UDim2.new(1, -40, 0, 8)
+    cb.BackgroundTransparency = 1; cb.Text = "✕"; cb.TextColor3 = Color3.fromRGB(180, 180, 180)
+    cb.Font = Enum.Font.GothamBold; cb.TextSize = 18; cb.ZIndex = 10
+    cb.MouseEnter:Connect(function() TweenService:Create(cb, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(255, 80, 80)}):Play() end)
+    cb.MouseLeave:Connect(function() TweenService:Create(cb, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(180, 180, 180)}):Play() end)
+    cb.MouseButton1Click:Connect(function() sg:Destroy() end)
+
+    -- Partículas decorativas de fundo
+    task.spawn(function()
+        pcall(function()
+            local pe = Instance.new("ParticleEmitter")
+            pe.Texture = "rbxassetid://4583316015"
+            pe.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 0, 255))})
+            pe.Size = NumberSequence.new(0.3)
+            pe.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 1)})
+            pe.Lifetime = NumberRange.new(3, 6)
+            pe.Rate = 4; pe.SpreadAngle = Vector2.new(-180, 180)
+            pe.Speed = NumberRange.new(1, 3); pe.VelocityInheritance = 0
+            pe.Rotation = NumberRange.new(0, 360); pe.RotSpeed = NumberRange.new(-30, 30)
+            pe.Drag = 0.5; pe.LockedToPart = true; pe.Enabled = true
+            pe.Parent = mf
+            Debris:AddItem(pe, 60)
+        end)
+    end)
+
+    -- ===================== LÓGICA =====================
+    local animarBarra
+    animarBarra = function(progresso)
+        local targetSize = UDim2.new(progresso, 0, 0, 3)
+        loadBar.BackgroundTransparency = 0
+        TweenService:Create(loadBar, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetSize}):Play()
+        if progresso >= 1 then
+            task.wait(0.3)
+            TweenService:Create(loadBar, TweenInfo.new(0.3), {BackgroundTransparency = 1, Size = UDim2.new(0, 0, 0, 3)}):Play()
+        end
+    end
+
+    local function setStatus(msg, cor)
+        st.Text = msg; st.TextColor3 = cor or Color3.fromRGB(140, 140, 160)
+        TweenService:Create(st, TweenInfo.new(0.15), {TextTransparency = 0}):Play()
+    end
+
+    vb.MouseButton1Click:Connect(function()
+        local key = ki.Text
+        if key == "" then setStatus("❌  Digite uma key!", Color3.fromRGB(255, 60, 60)); return end
+        setStatus("⏳  Verificando...", Color3.fromRGB(255, 200, 0)); animarBarra(0.3)
+        local success, msg = redeemKey(key)
+        if success then
+            animarBarra(1); setStatus("✅  Key válida! Carregando MEC BR...", Color3.fromRGB(0, 255, 100))
+            task.wait(0.8); sg:Destroy()
+            _G[Config.Secret] = true; StartMECBR()
+        else
+            animarBarra(0); setStatus("❌  " .. msg, Color3.fromRGB(255, 50, 50))
+        end
+    end)
+
+    gb.MouseButton1Click:Connect(function()
+        setStatus("⏳  Gerando link...", Color3.fromRGB(255, 200, 0)); animarBarra(0.3)
         local success, link = cacheLink()
         if success then
-            pcall(function() setclipboard(link) end)
-            Status.Text = "✅ Link copiado! Abra no navegador e gere uma key."
-            Status.TextColor3 = Color3.fromRGB(0, 200, 100)
+            pcall(function() setclipboard(link) end); animarBarra(1)
+            setStatus("✅  Link copiado! Abra no navegador.", Color3.fromRGB(0, 200, 100))
         else
-            Status.Text = "❌ Erro: " .. tostring(link); Status.TextColor3 = Color3.fromRGB(255, 50, 50)
+            animarBarra(0); setStatus("❌  Erro: " .. tostring(link), Color3.fromRGB(255, 50, 50))
         end
     end)
 
     if isfile and isfile(Config.KeyFileName) then
         local savedKey = readfile(Config.KeyFileName)
         if savedKey ~= "" then
-            Status.Text = "⏳ Verificando key salva..."
+            setStatus("⏳  Verificando key salva...", Color3.fromRGB(255, 200, 0))
             task.spawn(function()
                 local success, msg = redeemKey(savedKey)
                 if success then
-                    Status.Text = "✅ Auto-login!"; Status.TextColor3 = Color3.fromRGB(0, 255, 100)
-                    task.wait(0.5); ScreenGui:Destroy()
+                    animarBarra(1); setStatus("✅  Auto-login!", Color3.fromRGB(0, 255, 100))
+                    task.wait(0.5); sg:Destroy()
                     _G[Config.Secret] = true; StartMECBR()
                 else
-                    Status.Text = "⌛ Key expirada. Gere uma nova."
-                    Status.TextColor3 = Color3.fromRGB(255, 150, 0)
+                    setStatus("⌛  Key expirada. Gere uma nova.", Color3.fromRGB(255, 150, 0))
                 end
             end)
         end
