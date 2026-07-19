@@ -1,36 +1,25 @@
 -- =============================================================================
--- 🚀 MEC BR ULTIMATE | ENTERPRISE EDITION v3.8
+-- MEC BR ULTIMATE | ENTERPRISE EDITION v3.8
 -- =============================================================================
--- ██████╗ ███████╗████████╗██████╗ ██╗██╗  ██╗
--- ██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██║╚██╗██╔╝
--- ██████╔╝█████╗     ██║   ██████╔╝██║ ╚███╔╝ 
--- ██╔══██╗██╔══╝     ██║   ██╔══██╗██║ ██╔██╗ 
--- ██║  ██║███████╗   ██║   ██║  ██║██║██╔╝ ██╗
--- ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
--- =============================================================================
+-- Portado para: Orion Library
 -- Desenvolvido por: Chora_Argumento & Petrix
--- Framework UI: Rayfield
 -- =============================================================================
 
 -- =============================================================================
--- 🔒 SECURITY: ANTI-BYPASS (SecretCode) — NÃO REMOVA
--- =============================================================================
--- Este script só funciona se carregado pelo mec_br_loader.lua (Key System).
--- Se tentar executar direto sem passar pelo key system, será bloqueado.
+-- SEGURANCA: ANTI-BYPASS
 -- =============================================================================
 local SECRET_KEY = "MEC_BR_SECRET_2026"
 if not _G[SECRET_KEY] then
     local player = game:GetService("Players").LocalPlayer
     if player then
-        player:Kick("🛡️ Execução não autorizada!\n\nUse o Key System oficial para executar o MEC BR ULTIMATE.\nby Chora_Argumento & Petrix")
+        player:Kick("🛡️ Execucao nao autorizada!\n\nUse o Key System oficial para executar o MEC BR ULTIMATE.\nby Chora_Argumento & Petrix")
     end
     return
 end
--- Remove o segredo da memória após verificar (segurança extra)
 _G[SECRET_KEY] = nil
 -- =============================================================================
 
--- [1] INICIALIZAÇÃO DE SERVIÇOS & DEPENDÊNCIAS
+-- [1] SERVICOS
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -38,36 +27,40 @@ local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 local SoundService = game:GetService("SoundService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({
+    Name = "🚚 MEC BR ULTIMATE | v3.8",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "MEC_Ultimate_Config",
+    IntroEnabled = true,
+    IntroText = "MEC BR ULTIMATE"
+})
 
--- [2] VARIÁVEIS DE ESTADO
+-- [2] VARIAVEIS DE ESTADO
 local ultimaPosicao = nil
 local localSelecionado = nil
 local entregando = false
 local puxando = false
-
--- Variáveis do sistema de solda
 local grabbedParts = {}
 local welds = {}
 local isWelded = false
-
--- Referências de Elementos UI
 local StatusLabel, PosLabel, UltimaPosLabel, PecasLabel, AutoStatusLabel
 
--- [3] BANCO DE DADOS DE COORDENADAS
+-- [3] COORDENADAS
 local coordenadas = {
-    {nome = "Auto Peças", posicao = Vector3.new(-3335.28, 65.69, -3400.30)},
+    {nome = "Auto Pecas", posicao = Vector3.new(-3335.28, 65.69, -3400.30)},
     {nome = "Posto de Gasolina", posicao = Vector3.new(-3232.68, 66.07, -3704.04)},
     {nome = "Ferro Velho", posicao = Vector3.new(-3131.48, 65.67, -4247.97)},
     {nome = "Drag", posicao = Vector3.new(-3900.53, 64.81, -4890.13)},
-    {nome = "Concessionária", posicao = Vector3.new(-3041.93, 65.49, -3694.85)},
-    {nome = "Construção", posicao = Vector3.new(-3649.34, 65.17, -2504.47)},
+    {nome = "Concessionaria", posicao = Vector3.new(-3041.93, 65.49, -3694.85)},
+    {nome = "Construcao", posicao = Vector3.new(-3649.34, 65.17, -2504.47)},
     {nome = "Entregas", posicao = Vector3.new(-25688.55, 32.99, -5885.05)},
 }
 
--- [4] CONFIGURAÇÕES
+-- [4] CONFIGURACOES
 local settings = {
     raioPuxar = 50,
     alturaPilha = 2.5,
@@ -76,10 +69,9 @@ local settings = {
 }
 
 -- =============================================================================
--- [5] SISTEMA DE SOM E EFEITOS VISUAIS
+-- [5] SOM E EFEITOS VISUAIS
 -- =============================================================================
 
--- Banco de sons (IDs públicos do Roblox)
 local SONS = {
     teleporte  = "rbxassetid://9120386890",
     pegar      = "rbxassetid://18376010604",
@@ -114,7 +106,6 @@ local function criarParticulas(cframe, cor, quantidade, duracao)
         p.CFrame = cframe
         p.Parent = Workspace
         Debris:AddItem(p, duracao or 3)
-
         local pe = Instance.new("ParticleEmitter")
         pe.Texture = "rbxassetid://4583316015"
         pe.Color = ColorSequence.new(cor)
@@ -142,7 +133,6 @@ local function criarExplosaoVisual(cframe, cor, tamanho)
         a.WorldCFrame = cframe
         a.Parent = Workspace.Terrain
         Debris:AddItem(a, 3)
-
         local e = Instance.new("Explosion")
         e.BlastRadius = tamanho or 8
         e.BlastPressure = 0
@@ -159,12 +149,8 @@ local function criarEfeitoTeletransporte(personagem, destino)
         if not personagem then return end
         local root = personagem:FindFirstChild("HumanoidRootPart")
         if not root then return end
-
-        -- Flash branco no local de origem
         criarParticulas(root.CFrame, Color3.new(1, 1, 1), 80, 2)
         criarExplosaoVisual(root.CFrame, Color3.new(1, 1, 1), 4)
-
-        -- Traço de luz
         local beamOrigin = root.Position
         local beamTarget = destino
         local dist = (beamTarget - beamOrigin).Magnitude
@@ -179,19 +165,16 @@ local function criarEfeitoTeletransporte(personagem, destino)
             bPart.Anchored = true
             bPart.Parent = Workspace
             Debris:AddItem(bPart, 0.5)
-
             local tween = TweenService:Create(bPart, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1})
             tween:Play()
         end
-
-        -- Flash no destino
         criarParticulas(CFrame.new(destino), Color3.fromRGB(0, 200, 255), 60, 2)
         criarExplosaoVisual(CFrame.new(destino), Color3.fromRGB(0, 150, 255), 6)
     end)
 end
 
 -- =============================================================================
--- [6] SISTEMA DE SOLDA (WELD) - SÓ PEGA TRANSPBOX
+-- [6] SISTEMA DE SOLDA
 -- =============================================================================
 
 local function isTranspBox(part)
@@ -199,15 +182,11 @@ local function isTranspBox(part)
     if part.Name ~= "TranspBox" then return false end
     if part.Anchored then return false end
     if part:IsDescendantOf(LocalPlayer.Character) then return false end
-
     local parent = part.Parent
     while parent do
-        if parent.Name == "GrabStuff" and parent.Parent == Workspace then
-            return true
-        end
+        if parent.Name == "GrabStuff" and parent.Parent == Workspace then return true end
         parent = parent.Parent
     end
-
     return false
 end
 
@@ -221,18 +200,13 @@ end
 local function limparPecasFantasma()
     local toRemove = {}
     for i, part in ipairs(grabbedParts) do
-        if not part or not part.Parent then
-            table.insert(toRemove, i)
-        end
+        if not part or not part.Parent then table.insert(toRemove, i) end
     end
     if #toRemove > 0 then
         for i = #toRemove, 1, -1 do
             local idx = toRemove[i]
             local part = grabbedParts[idx]
-            if welds[part] then
-                welds[part]:Destroy()
-                welds[part] = nil
-            end
+            if welds[part] then welds[part]:Destroy(); welds[part] = nil end
             table.remove(grabbedParts, idx)
         end
     end
@@ -242,52 +216,40 @@ local function weldGrabPart(part)
     if not part then return false end
     if not isTranspBox(part) then return false end
     if isAlreadyGrabbed(part) then return false end
-
     local character = LocalPlayer.Character
     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return false end
-
     part.CanCollide = false
     part.Anchored = false
     part.Massless = true
     part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
     part.Transparency = part.Transparency + 0.15
-
     local index = #grabbedParts
     local altura = index * settings.alturaPilha + 1.5
-
     local weld = Instance.new("Weld")
     weld.Part0 = rootPart
     weld.Part1 = part
     weld.C0 = CFrame.new(settings.posicaoX or 0, altura, settings.posicaoZ or 3)
     weld.Parent = rootPart
-
     table.insert(grabbedParts, part)
     welds[part] = weld
-
-    -- Efeito visual na peça
     pcall(function()
         local pos = part.Position
         criarParticulas(CFrame.new(pos), Color3.fromRGB(0, 255, 200), 20, 0.8)
-        -- Sparkles na peça
         local sp = Instance.new("Sparkles")
         sp.SparkleColor = Color3.fromRGB(0, 255, 200)
         sp.Parent = part
         Debris:AddItem(sp, 1.5)
     end)
-
     return true
 end
 
 local function atualizarPilha()
     if #grabbedParts == 0 then return end
-
     local character = LocalPlayer.Character
     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return end
-
     limparPecasFantasma()
-
     for index, part in ipairs(grabbedParts) do
         if part and part.Parent and welds[part] then
             local altura = (index - 1) * settings.alturaPilha + 1.5
@@ -299,27 +261,23 @@ end
 local function puxarPecas()
     if puxando then
         tocarSom(SONS.erro, 0.4)
-        return Rayfield:Notify({Title = "⏳ Sistema Ocupado", Content = "Aguarde a conclusão do ciclo atual.", Duration = 2})
+        OrionLib:MakeNotification({Name = "⏳ Sistema Ocupado", Content = "Aguarde a conclusao do ciclo atual.", Image = "rbxassetid://4483345998", Time = 2})
+        return
     end
-
     local character = LocalPlayer.Character
     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
     if not rootPart then
         puxando = false
         tocarSom(SONS.erro, 0.5)
-        return Rayfield:Notify({Title = "❌ Falha Crítica", Content = "Componente HumanoidRootPart não mapeado.", Duration = 3})
+        OrionLib:MakeNotification({Name = "Falha Critica", Content = "Componente HumanoidRootPart nao mapeado.", Image = "rbxassetid://4483345998", Time = 3})
+        return
     end
-
     puxando = true
     local count = 0
     local radius = settings.raioPuxar or 50
-
     tocarSom(SONS.scan, 0.3)
-    Rayfield:Notify({Title = "🧲 Scanner Ativo", Content = "Procurando TranspBox num raio de " .. radius .. " studs", Duration = 2})
-
-    -- Visual pulse do jogador
+    OrionLib:MakeNotification({Name = "Scanner Ativo", Content = "Procurando TranspBox num raio de " .. radius .. " studs", Image = "rbxassetid://4483345998", Time = 2})
     pcall(function()
-        -- Anel de pulso
         local pulse = Instance.new("Part")
         pulse.Size = Vector3.new(0.2, 0.2, 0.2)
         pulse.Shape = Enum.PartType.Ball
@@ -331,7 +289,6 @@ local function puxarPecas()
         pulse.CFrame = rootPart.CFrame
         pulse.Parent = Workspace
         Debris:AddItem(pulse, 1.5)
-
         local pe = Instance.new("ParticleEmitter")
         pe.Texture = "rbxassetid://4583316015"
         pe.Color = ColorSequence.new(Color3.fromRGB(0, 255, 200))
@@ -347,80 +304,59 @@ local function puxarPecas()
         pe.Parent = pulse
         Debris:AddItem(pe, 1.5)
     end)
-
     task.spawn(function()
         limparPecasFantasma()
-
         local partsToProcess = {}
-
         local grabStuff = Workspace:FindFirstChild("GrabStuff")
         if grabStuff then
             for _, v in ipairs(grabStuff:GetDescendants()) do
                 if v:IsA("BasePart") and v.Name == "TranspBox" and not v.Anchored then
                     local dist = (v.Position - rootPart.Position).Magnitude
-                    if dist < radius and not isAlreadyGrabbed(v) then
-                        table.insert(partsToProcess, v)
-                    end
+                    if dist < radius and not isAlreadyGrabbed(v) then table.insert(partsToProcess, v) end
                 end
             end
         else
             for _, v in ipairs(Workspace:GetDescendants()) do
                 if v:IsA("BasePart") and v.Name == "TranspBox" and not v.Anchored then
                     local dist = (v.Position - rootPart.Position).Magnitude
-                    if dist < radius and not isAlreadyGrabbed(v) then
-                        table.insert(partsToProcess, v)
-                    end
+                    if dist < radius and not isAlreadyGrabbed(v) then table.insert(partsToProcess, v) end
                 end
             end
         end
-
         for _, part in ipairs(partsToProcess) do
             if part and part.Parent then
                 local success = weldGrabPart(part)
-                if success then
-                    count = count + 1
-                    task.wait(0.03)
-                end
+                if success then count = count + 1; task.wait(0.03) end
             end
         end
-
         isWelded = true
         puxando = false
-
         if count > 0 then
             tocarSom(SONS.pegar, 0.4)
-            Rayfield:Notify({Title = "✅ Sucesso", Content = count .. " TranspBox soldadas e seguindo você!", Duration = 3})
+            OrionLib:MakeNotification({Name = "Sucesso", Content = count .. " TranspBox soldadas e seguindo voce!", Image = "rbxassetid://4483345998", Time = 3})
         else
             tocarSom(SONS.erro, 0.4)
-            Rayfield:Notify({Title = "❌ Nada Encontrado", Content = "Nenhuma TranspBox próxima encontrada!", Duration = 2})
+            OrionLib:MakeNotification({Name = "Nada Encontrado", Content = "Nenhuma TranspBox proxima encontrada!", Image = "rbxassetid://4483345998", Time = 2})
         end
     end)
 end
 
 local function soltarPecas()
     local count = #grabbedParts
-
     if count == 0 then
         tocarSom(SONS.erro, 0.3)
-        Rayfield:Notify({Title = "ℹ️ Info", Content = "Nenhuma TranspBox acoplada para soltar.", Duration = 2})
+        OrionLib:MakeNotification({Name = "Info", Content = "Nenhuma TranspBox acoplada para soltar.", Image = "rbxassetid://4483345998", Time = 2})
         return
     end
-
     isWelded = false
-
     for _, part in ipairs(grabbedParts) do
-        if welds[part] then
-            welds[part]:Destroy()
-            welds[part] = nil
-        end
+        if welds[part] then welds[part]:Destroy(); welds[part] = nil end
         if part and part.Parent then
             part.CanCollide = true
             part.Massless = false
             part.CustomPhysicalProperties = nil
             part.Transparency = math.max(0, part.Transparency - 0.15)
             part.Velocity = Vector3.new(0, 0, 0)
-
-            -- Efeito visual ao soltar
             pcall(function()
                 local pos = part.Position
                 criarParticulas(CFrame.new(pos), Color3.fromRGB(255, 100, 0), 30, 1)
@@ -428,129 +364,98 @@ local function soltarPecas()
             end)
         end
     end
-
     grabbedParts = {}
     welds = {}
-
     tocarSom(SONS.soltar, 0.5)
-    Rayfield:Notify({Title = "🔄 Módulo Resetado", Content = count .. " TranspBox soltas com sucesso!", Duration = 2})
+    OrionLib:MakeNotification({Name = "Modulo Resetado", Content = count .. " TranspBox soltas com sucesso!", Image = "rbxassetid://4483345998", Time = 2})
 end
 
 -- =============================================================================
--- [7] NÚCLEO DO SISTEMA DE LOGÍSTICA (TELETRANSPORTE)
+-- [7] SISTEMA DE LOGISTICA
 -- =============================================================================
 
 local function entregar()
     if not localSelecionado then
         tocarSom(SONS.erro, 0.5)
-        return Rayfield:Notify({Title = "❌ Erro de Rota", Content = "Destino não selecionado no painel.", Duration = 3})
+        OrionLib:MakeNotification({Name = "Erro de Rota", Content = "Destino nao selecionado no painel.", Image = "rbxassetid://4483345998", Time = 3})
+        return
     end
-
     if entregando then return end
-
     local character = LocalPlayer.Character
     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
     if not rootPart then
         entregando = false
         tocarSom(SONS.erro, 0.5)
-        return Rayfield:Notify({Title = "❌ Erro Causal", Content = "Entidade física indisponível.", Duration = 3})
+        OrionLib:MakeNotification({Name = "Erro Causal", Content = "Entidade fisica indisponivel.", Image = "rbxassetid://4483345998", Time = 3})
+        return
     end
-
     entregando = true
     ultimaPosicao = rootPart.Position
-
     tocarSom(SONS.teleporte, 0.4)
-    Rayfield:Notify({Title = "🚚 Roteamento Iniciado", Content = "Destino: " .. localSelecionado.nome, Duration = 2})
-
-    -- Efeitos visuais
+    OrionLib:MakeNotification({Name = "Roteamento Iniciado", Content = "Destino: " .. localSelecionado.nome, Image = "rbxassetid://4483345998", Time = 2})
     criarEfeitoTeletransporte(character, localSelecionado.posicao + Vector3.new(0, 5, 0))
-
     task.wait(0.2)
     rootPart.CFrame = CFrame.new(localSelecionado.posicao + Vector3.new(0, 5, 0))
     rootPart.Velocity = Vector3.new(0, 0, 0)
     rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-
     task.wait(0.1)
     tocarSom(SONS.sucesso, 0.5)
-    Rayfield:Notify({Title = "✅ Vetor Concluído", Content = "Posicionado em: " .. localSelecionado.nome, Duration = 3})
-
+    OrionLib:MakeNotification({Name = "Vetor Concluido", Content = "Posicionado em: " .. localSelecionado.nome, Image = "rbxassetid://4483345998", Time = 3})
     entregando = false
-
-    if StatusLabel then StatusLabel:Set("✅ Última entrega: " .. localSelecionado.nome) end
+    if StatusLabel then StatusLabel:Set("Ultima entrega: " .. localSelecionado.nome) end
 end
 
 local function voltar()
     if not ultimaPosicao then
         tocarSom(SONS.erro, 0.5)
-        return Rayfield:Notify({Title = "❌ Registro Ausente", Content = "Nenhum vetor anterior armazenado.", Duration = 3})
+        OrionLib:MakeNotification({Name = "Registro Ausente", Content = "Nenhum vetor anterior armazenado.", Image = "rbxassetid://4483345998", Time = 3})
+        return
     end
-
     if entregando then return end
-
     local character = LocalPlayer.Character
     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
     if not rootPart then
         entregando = false
         tocarSom(SONS.erro, 0.5)
-        return Rayfield:Notify({Title = "❌ Erro", Content = "Personagem não disponível.", Duration = 2})
+        OrionLib:MakeNotification({Name = "Erro", Content = "Personagem nao disponivel.", Image = "rbxassetid://4483345998", Time = 2})
+        return
     end
-
     local destino = ultimaPosicao
-
     tocarSom(SONS.retorno, 0.4)
-    Rayfield:Notify({Title = "↩️ Retorno Vetorial", Content = "Retornando à coordenada de origem.", Duration = 2})
-
+    OrionLib:MakeNotification({Name = "Retorno Vetorial", Content = "Retornando a coordenada de origem.", Image = "rbxassetid://4483345998", Time = 2})
     criarEfeitoTeletransporte(character, destino + Vector3.new(0, 5, 0))
-
     task.wait(0.2)
     rootPart.CFrame = CFrame.new(destino + Vector3.new(0, 5, 0))
     rootPart.Velocity = Vector3.new(0, 0, 0)
     rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-
     task.wait(0.1)
     tocarSom(SONS.sucesso, 0.5)
-    Rayfield:Notify({Title = "✅ Concluído", Content = "Retorno executado com sucesso.", Duration = 3})
-
-    -- NÃO limpa ultimaPosicao — mantém histórico
-
-    if StatusLabel then StatusLabel:Set("✅ Voltou para posição anterior") end
+    OrionLib:MakeNotification({Name = "Concluido", Content = "Retorno executado com sucesso.", Image = "rbxassetid://4483345998", Time = 3})
+    if StatusLabel then StatusLabel:Set("Voltou para posicao anterior") end
 end
 
 -- =============================================================================
--- [8] SISTEMA DE ENTREGA AUTOMÁTICA (EXPERIMENTAL) - VERSÃO MELHORADA
+-- [8] SISTEMA DE ENTREGA AUTOMATICA
 -- =============================================================================
 
 local function isPartVisible(part)
     if not part or not part.Parent then return false end
     if part:IsA("BasePart") then
         if part.Transparency < 0.9 then
-            local cf = part.CFrame
-            local size = part.Size
-            -- Se o tamanho for razoável (> 0.1 em cada eixo), provavelmente é real
-            if size.Magnitude > 0.5 then
-                return true
-            end
+            if part.Size.Magnitude > 0.5 then return true end
         end
     end
     for _, child in ipairs(part:GetDescendants()) do
         if child:IsA("BillboardGui") or child:IsA("SelectionBox") or child:IsA("SelectionLasso") then
-            if child.Enabled == true then
-                return true
-            end
+            if child.Enabled == true then return true end
         end
         local nome = child.Name:lower()
-        if nome:find("arrow") or nome:find("pointer") or nome:find("indicator") or nome:find("marker") then
-            return true
-        end
-        -- Procura por atributo "Active" ou "Enabled"
+        if nome:find("arrow") or nome:find("pointer") or nome:find("indicator") or nome:find("marker") then return true end
         if child:IsA("BoolValue") then
             local n = child.Name:lower()
-            if (n == "active" or n == "enabled" or n == "visible") and child.Value == true then
-                return true
-            end
+            if (n == "active" or n == "enabled" or n == "visible") and child.Value == true then return true end
         end
     end
-    -- Verifica atributo na pasta
     pcall(function()
         if part:GetAttribute("Active") == true then return true end
         if part:GetAttribute("Enabled") == true then return true end
@@ -562,26 +467,17 @@ end
 
 local function isDestinoAtivo(destinoFolder)
     if not destinoFolder then return false end
-
     local dropArea = destinoFolder:FindFirstChild("DropArea")
     if dropArea and dropArea:IsA("BasePart") then
-        if isPartVisible(dropArea) then
-            return true
-        end
+        if isPartVisible(dropArea) then return true end
     end
-
     local details = destinoFolder:FindFirstChild("Details")
     if details then
         local spin = details:FindFirstChild("Spin")
-        if spin and spin:IsA("BasePart") then
-            if isPartVisible(spin) then return true end
-        end
+        if spin and spin:IsA("BasePart") then if isPartVisible(spin) then return true end end
         local decal = details:FindFirstChild("Decal")
-        if decal and decal:IsA("BasePart") then
-            if isPartVisible(decal) then return true end
-        end
+        if decal and decal:IsA("BasePart") then if isPartVisible(decal) then return true end end
     end
-
     for _, child in ipairs(destinoFolder:GetDescendants()) do
         if child:IsA("BillboardGui") or child:IsA("SelectionBox") or child:IsA("SelectionLasso") then
             if child.Enabled == true then return true end
@@ -596,53 +492,46 @@ local function isDestinoAtivo(destinoFolder)
         end
         if child:IsA("BoolValue") then
             local n = child.Name:lower()
-            if (n == "active" or n == "enabled" or n == "visible") and child.Value == true then
-                return true
-            end
+            if (n == "active" or n == "enabled" or n == "visible") and child.Value == true then return true end
         end
     end
-
     pcall(function()
         if destinoFolder:GetAttribute("Active") == true then return true end
         if destinoFolder:GetAttribute("State") == "Active" then return true end
     end)
-
     return false
 end
 
 local function entregarAutomatico()
     if entregando then
-        return Rayfield:Notify({Title = "⏳ Ocupado", Content = "Aguarde a conclusão da entrega atual.", Duration = 2})
+        OrionLib:MakeNotification({Name = "Ocupado", Content = "Aguarde a conclusao da entrega atual.", Image = "rbxassetid://4483345998", Time = 2})
+        return
     end
-
     local character = LocalPlayer.Character
     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
     if not rootPart then
-        return Rayfield:Notify({Title = "❌ Erro", Content = "Personagem não disponível.", Duration = 2})
+        OrionLib:MakeNotification({Name = "Erro", Content = "Personagem nao disponivel.", Image = "rbxassetid://4483345998", Time = 2})
+        return
     end
-
     local transportJob = Workspace:FindFirstChild("TransportJobWorkings")
     if not transportJob then
         tocarSom(SONS.erro, 0.5)
-        return Rayfield:Notify({Title = "❌ Estrutura não encontrada", Content = "TransportJobWorkings não existe neste servidor.", Duration = 3})
+        OrionLib:MakeNotification({Name = "Estrutura nao encontrada", Content = "TransportJobWorkings nao existe neste servidor.", Image = "rbxassetid://4483345998", Time = 3})
+        return
     end
-
     local destinations = transportJob:FindFirstChild("Destinations")
     if not destinations then
         tocarSom(SONS.erro, 0.5)
-        return Rayfield:Notify({Title = "❌ Destinations não encontrada", Content = "A pasta Destinations está ausente em TransportJobWorkings.", Duration = 3})
+        OrionLib:MakeNotification({Name = "Destinations nao encontrada", Content = "A pasta Destinations esta ausente em TransportJobWorkings.", Image = "rbxassetid://4483345998", Time = 3})
+        return
     end
-
     local dropAreasValidas = {}
     local dropAreasInativas = {}
-
     for _, destinoFolder in ipairs(destinations:GetChildren()) do
         if destinoFolder:IsA("Folder") or destinoFolder:IsA("Model") then
             local dropArea = destinoFolder:FindFirstChild("DropArea")
             local details = destinoFolder:FindFirstChild("Details")
-            local decal = nil
-            local spin = nil
-
+            local decal, spin
             if details then
                 decal = details:FindFirstChild("Decal")
                 spin = details:FindFirstChild("Spin")
@@ -650,7 +539,6 @@ local function entregarAutomatico()
                 decal = destinoFolder:FindFirstChild("Decal")
                 spin = destinoFolder:FindFirstChild("Spin")
             end
-
             if dropArea and dropArea:IsA("BasePart") and decal and spin then
                 local ativo = isDestinoAtivo(destinoFolder)
                 local info = {
@@ -663,282 +551,212 @@ local function entregarAutomatico()
                     pasta = destinoFolder,
                     ativo = ativo
                 }
-                if ativo then
-                    table.insert(dropAreasValidas, info)
-                else
-                    table.insert(dropAreasInativas, info)
-                end
+                if ativo then table.insert(dropAreasValidas, info)
+                else table.insert(dropAreasInativas, info) end
             end
         end
     end
-
     if #dropAreasValidas == 0 then
         tocarSom(SONS.erro, 0.5)
         if #dropAreasInativas > 0 then
             local nomes = {}
-            for _, area in ipairs(dropAreasInativas) do
-                table.insert(nomes, area.nome)
-            end
-            return Rayfield:Notify({Title = "❌ Nenhum destino ativo", Content = "Destinos encontrados mas INATIVOS: " .. table.concat(nomes, ", ") .. "\nAguarde a entrega ser ativada!", Duration = 5})
+            for _, area in ipairs(dropAreasInativas) do table.insert(nomes, area.nome) end
+            OrionLib:MakeNotification({Name = "Nenhum destino ativo", Content = "Destinos encontrados mas INATIVOS: " .. table.concat(nomes, ", ") .. " | Aguarde a entrega ser ativada!", Image = "rbxassetid://4483345998", Time = 5})
         else
-            return Rayfield:Notify({Title = "❌ Nenhum destino válido encontrado", Content = "Nenhuma área de entrega com DropArea + Decal + Spin disponível.", Duration = 4})
+            OrionLib:MakeNotification({Name = "Nenhum destino valido", Content = "Nenhuma area de entrega com DropArea + Decal + Spin disponivel.", Image = "rbxassetid://4483345998", Time = 4})
         end
+        return
     end
-
     local escolhido = nil
     local menorDist = math.huge
-
     for _, area in ipairs(dropAreasValidas) do
         local dist = (area.posicao - rootPart.Position).Magnitude
-        if dist < menorDist then
-            menorDist = dist
-            escolhido = area
-        end
+        if dist < menorDist then menorDist = dist; escolhido = area end
     end
-
     if not escolhido then
         tocarSom(SONS.erro, 0.5)
-        return Rayfield:Notify({Title = "❌ Erro", Content = "Não foi possível selecionar um destino válido.", Duration = 2})
+        OrionLib:MakeNotification({Name = "Erro", Content = "Nao foi possivel selecionar um destino valido.", Image = "rbxassetid://4483345998", Time = 2})
+        return
     end
-
     entregando = true
     ultimaPosicao = rootPart.Position
-
     tocarSom(SONS.teleporte, 0.4)
-    Rayfield:Notify({Title = "🚀 Entrega Automática (Experimental)", Content = "Indo para " .. escolhido.nome .. " (ativo ✅ | dist: " .. math.floor(menorDist) .. "s)", Duration = 2})
-
-    if AutoStatusLabel then
-        AutoStatusLabel:Set("🤖 Auto: " .. escolhido.nome .. " ✅ ATIVO (✓ DropArea ✓ Decal ✓ Spin)")
-    end
-
+    OrionLib:MakeNotification({Name = "Entrega Automatica (Experimental)", Content = "Indo para " .. escolhido.nome .. " (ativo | dist: " .. math.floor(menorDist) .. "s)", Image = "rbxassetid://4483345998", Time = 2})
+    if AutoStatusLabel then AutoStatusLabel:Set("🤖 Auto: " .. escolhido.nome .. " ATIVO (DropArea + Decal + Spin)") end
     criarEfeitoTeletransporte(character, escolhido.posicao + Vector3.new(0, 3, 0))
-
     task.wait(0.2)
-
     local destino = escolhido.posicao + Vector3.new(0, 3, 0)
     rootPart.CFrame = CFrame.new(destino)
     rootPart.Velocity = Vector3.new(0, 0, 0)
     rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-
     tocarSom(SONS.sucesso, 0.5)
-    Rayfield:Notify({Title = "✅ Chegou em " .. escolhido.nome, Content = "🔍 Destino ATIVO confirmado!\n📦 Área de entrega pronta!", Duration = 4})
-
+    OrionLib:MakeNotification({Name = "Chegou em " .. escolhido.nome, Content = "Destino ATIVO confirmado! Area de entrega pronta!", Image = "rbxassetid://4483345998", Time = 4})
     entregando = false
-
-    if StatusLabel then
-        StatusLabel:Set("✅ Entregue em: " .. escolhido.nome .. " (Automático - ATIVO)")
-    end
+    if StatusLabel then StatusLabel:Set("Entregue em: " .. escolhido.nome .. " (Automatico - ATIVO)") end
 end
 
 -- =============================================================================
--- [9] ARQUITETURA DA INTERFACE GRÁFICA (RAYFIELD UI)
+-- [9] INTERFACE GRAFICA (ORION LIBRARY)
 -- =============================================================================
 
-local Window = Rayfield:CreateWindow({
-    Name = "🚚 MEC BR ULTIMATE | v3.8",
-    Icon = 0,
-    LoadingTitle = "Inicializando Painel da Maldade...",
-    LoadingSubtitle = "by Chora_Argumento & Petrix",
-    Theme = "Ocean",
-    ToggleUIKeybind = "K",
-    ConfigurationSaving = { Enabled = true, FileName = "MEC_Ultimate_Config" },
-    Discord = { Enabled = false },
-    KeySystem = false,
+-- Abas
+local MagnetTab = Window:MakeTab({Name = "Magnetico", PremiumOnly = false})
+local EntregaTab = Window:MakeTab({Name = "Entrega", PremiumOnly = false})
+local CoordTab = Window:MakeTab({Name = "Coordenadas", PremiumOnly = false})
+local InfoTab = Window:MakeTab({Name = "Painel Informativo", PremiumOnly = false})
+local CreditsTab = Window:MakeTab({Name = "Creditos", PremiumOnly = false})
+
+-- ===== ABA MAGNETICO =====
+MagnetTab:AddSection({Name = "Controle Operacional"})
+MagnetTab:AddButton({Name = "PEGAR TRANSPBOX", Description = "Solda TranspBox proximas ao personagem", Callback = puxarPecas})
+MagnetTab:AddButton({Name = "SOLTAR TRANSPBOX", Description = "Libera todas as TranspBox soldadas", Callback = soltarPecas})
+
+MagnetTab:AddSection({Name = "Parametros de Redimensionamento"})
+MagnetTab:AddSlider({
+    Name = "Raio do Campo Magnetico",
+    Min = 10, Max = 100, Default = settings.raioPuxar, Color = Color3.fromRGB(0, 200, 255),
+    Increment = 5, ValueName = "studs",
+    Callback = function(Value) settings.raioPuxar = Value end
+})
+MagnetTab:AddSlider({
+    Name = "Altura do Agrupamento (Pilha)",
+    Min = 1, Max = 6, Default = settings.alturaPilha, Color = Color3.fromRGB(0, 200, 255),
+    Increment = 0.5, ValueName = "studs",
+    Callback = function(Value) settings.alturaPilha = Value; atualizarPilha() end
+})
+MagnetTab:AddSlider({
+    Name = "Distancia a Frente",
+    Min = 1, Max = 10, Default = 3, Color = Color3.fromRGB(0, 200, 255),
+    Increment = 0.5, ValueName = "studs",
+    Callback = function(Value) settings.posicaoZ = Value; atualizarPilha() end
 })
 
-local MagnetTab   = Window:CreateTab("🧲 Magnético", 0)
-local EntregaTab  = Window:CreateTab("🚚 Entrega", 0)
-local CoordTab    = Window:CreateTab("📍 Coordenadas", 0)
-local InfoTab     = Window:CreateTab("ℹ️ Painel Informativo", 0)
-
--- [ABA: MAGNÉTICO]
-MagnetTab:CreateSection("🧲 Controle Operacional")
-MagnetTab:CreateButton({ Name = "🧲 PEGAR TRANSPBOX", Callback = puxarPecas })
-MagnetTab:CreateButton({ Name = "❌ SOLTAR TRANSPBOX", Callback = soltarPecas })
-
-MagnetTab:CreateSection("⚙️ Parâmetros de Redimensionamento")
-MagnetTab:CreateSlider({
-    Name = "📡 Raio do Campo Magnético",
-    Range = {10, 100},
-    Increment = 5,
-    Suffix = " studs",
-    CurrentValue = settings.raioPuxar,
-    Flag = "RaioPuxar",
-    Callback = function(Value) settings.raioPuxar = Value end,
-})
-
-MagnetTab:CreateSlider({
-    Name = "📏 Altura do Agrupamento (Pilha)",
-    Range = {1, 6},
-    Increment = 0.5,
-    Suffix = " studs",
-    CurrentValue = settings.alturaPilha,
-    Flag = "AlturaPilha",
-    Callback = function(Value)
-        settings.alturaPilha = Value
-        atualizarPilha()
-    end,
-})
-
-MagnetTab:CreateSlider({
-    Name = "📏 Distância à Frente",
-    Range = {1, 10},
-    Increment = 0.5,
-    Suffix = " studs",
-    CurrentValue = 3,
-    Flag = "DistanciaFrente",
-    Callback = function(Value)
-        settings.posicaoZ = Value
-        atualizarPilha()
-    end,
-})
-
-MagnetTab:CreateSection("📊 Status do Sistema")
-PecasLabel = MagnetTab:CreateLabel("📦 TranspBox acopladas: 0")
+MagnetTab:AddSection({Name = "Status do Sistema"})
+PecasLabel = MagnetTab:AddLabel("📦 TranspBox acopladas: 0")
 
 task.spawn(function()
     while true do
         task.wait(0.5)
         if PecasLabel then
-            PecasLabel:Set("📦 TranspBox acopladas: " .. #grabbedParts .. (isWelded and " ✅ Soldadas" or " ⏸ Parado"))
+            PecasLabel:Set("📦 TranspBox acopladas: " .. #grabbedParts .. (isWelded and " Soldadas" or " Parado"))
         end
     end
 end)
 
--- [ABA: ENTREGA]
-EntregaTab:CreateSection("📍 Seletor de Rota Espacial")
+-- ===== ABA ENTREGA =====
+EntregaTab:AddSection({Name = "Seletor de Rota Espacial"})
 local opcoes = {}
 for i, dado in ipairs(coordenadas) do table.insert(opcoes, i .. ". " .. dado.nome) end
 
-EntregaTab:CreateDropdown({
+EntregaTab:AddDropdown({
     Name = "Selecione o destino",
+    Default = "",
     Options = opcoes,
-    CurrentOption = {},
-    MultipleOptions = false,
-    Flag = "LocalDropdown",
-    Callback = function(Options)
-        if #Options > 0 then
-            local index = tonumber(string.match(Options[1], "^(%d+)"))
-            if index then localSelecionado = coordenadas[index] end
-        end
-    end,
+    Callback = function(opt)
+        local index = tonumber(string.match(opt, "^(%d+)"))
+        if index then localSelecionado = coordenadas[index] end
+    end
 })
 
-EntregaTab:CreateSection("⚡ Executáveis Logísticos")
-EntregaTab:CreateButton({ Name = "🚚 INICIAR TRANSPORTE VETORIAL", Callback = entregar })
-EntregaTab:CreateButton({ Name = "↩️ RETORNAR À ORIGEM", Callback = voltar })
+EntregaTab:AddSection({Name = "Executaveis Logisticos"})
+EntregaTab:AddButton({Name = "INICIAR TRANSPORTE VETORIAL", Description = "Teleporta para o destino selecionado", Callback = entregar})
+EntregaTab:AddButton({Name = "RETORNAR A ORIGEM", Description = "Volta para ultima posicao registrada", Callback = voltar})
 
-EntregaTab:CreateSection("🧪 Experimental")
-EntregaTab:CreateButton({
-    Name = "🚀 ENTREGA AUTOMÁTICA (EXPERIMENTAL)",
-    Callback = entregarAutomatico
-})
-AutoStatusLabel = EntregaTab:CreateLabel("🤖 Status Auto: Aguardando...")
+EntregaTab:AddSection({Name = "Experimental"})
+EntregaTab:AddButton({Name = "ENTREGA AUTOMATICA (EXPERIMENTAL)", Description = "Detecta e teleporta para destinos ativos", Callback = entregarAutomatico})
+AutoStatusLabel = EntregaTab:AddLabel("🤖 Status Auto: Aguardando...")
 
-EntregaTab:CreateSection("📊 Telemetria Operacional")
-StatusLabel = EntregaTab:CreateLabel("✅ Módulo System: Aguardando Ações.")
-PosLabel = EntregaTab:CreateLabel("📍 Posição atual: Carregando dados vetoriais...")
-UltimaPosLabel = EntregaTab:CreateLabel("📌 Última posição: Nenhuma armazenada.")
+EntregaTab:AddSection({Name = "Telemetria Operacional"})
+StatusLabel = EntregaTab:AddLabel("Modulo System: Aguardando Acoes.")
+PosLabel = EntregaTab:AddLabel("Posicao atual: Carregando dados vetoriais...")
+UltimaPosLabel = EntregaTab:AddLabel("Ultima posicao: Nenhuma armazenada.")
 
--- [ABA: COORDENADAS]
-CoordTab:CreateSection("📋 Banco de Dados Estrutural")
+-- ===== ABA COORDENADAS =====
+CoordTab:AddSection({Name = "Banco de Dados Estrutural"})
 for i, dado in ipairs(coordenadas) do
-    CoordTab:CreateLabel(string.format("%d. %s\n   [X: %.2f | Y: %.2f | Z: %.2f]", i, dado.nome, dado.posicao.X, dado.posicao.Y, dado.posicao.Z))
+    CoordTab:AddLabel(i .. ". " .. dado.nome .. " | X: " .. string.format("%.2f", dado.posicao.X) .. " Y: " .. string.format("%.2f", dado.posicao.Y) .. " Z: " .. string.format("%.2f", dado.posicao.Z))
 end
 
-CoordTab:CreateButton({
-    Name = "📋 EXPORTAR BANCO PARA ÁREA DE TRANSFERÊNCIA",
+CoordTab:AddButton({
+    Name = "EXPORTAR BANCO PARA AREA DE TRANSFERENCIA",
+    Description = "Copia todas as coordenadas para o clipboard",
     Callback = function()
         local texto = "========================================\n📍 DATA EXPORT: MEC BR ULTIMATE\n========================================\n"
         for i, dado in ipairs(coordenadas) do
             texto = texto .. string.format("%d. %s -> Vector3.new(%.2f, %.2f, %.2f)\n", i, dado.nome, dado.posicao.X, dado.posicao.Y, dado.posicao.Z)
         end
         local sucesso = pcall(function() setclipboard(texto) end)
-        Rayfield:Notify({
-            Title = sucesso and "📋 Exportado" or "❌ Falha",
-            Content = sucesso and "Dados copiados com sucesso." or "Restrição de permissão do exploit.",
-            Duration = 3
-        })
+        OrionLib:MakeNotification({Name = sucesso and "Exportado" or "Falha", Content = sucesso and "Dados copiados com sucesso." or "Restricao de permissao do exploit.", Image = "rbxassetid://4483345998", Time = 3})
     end
 })
 
--- [ABA: INFORMÁTICO]
-InfoTab:CreateSection("⚙️ System Specifications")
-InfoTab:CreateLabel("• build_version: 3.8.0-pro")
-InfoTab:CreateLabel("• core_framework: Rayfield UI Engine")
-InfoTab:CreateLabel("• magnet_system: Weld (Solda) - TranspBox Only")
-InfoTab:CreateLabel("• teleport_system: Vector3 CFrame")
-InfoTab:CreateLabel("• sound_engine: RbxSoundID")
-InfoTab:CreateLabel("• particle_fx: ParticleEmitter + Explosion")
-InfoTab:CreateSection("👨‍💻 Desenvolvido Por")
-InfoTab:CreateLabel("• Chora_Argumento & Petrix")
-InfoTab:CreateLabel("• https://discord.gg/7dkp6uhYNb")
-InfoTab:CreateSection("📦 Alvo")
-InfoTab:CreateLabel("• Nome: TranspBox")
-InfoTab:CreateLabel("• Local: Workspace.GrabStuff")
-InfoTab:CreateLabel("• Posição: -25705.14, 31.83, -5854.22")
+-- ===== ABA INFORMATIVO =====
+InfoTab:AddSection({Name = "System Specifications"})
+InfoTab:AddLabel("build_version: 3.8.0-pro")
+InfoTab:AddLabel("core_framework: Orion Library")
+InfoTab:AddLabel("magnet_system: Weld (Solda) - TranspBox Only")
+InfoTab:AddLabel("teleport_system: Vector3 CFrame")
+InfoTab:AddLabel("sound_engine: RbxSoundID")
+InfoTab:AddLabel("particle_fx: ParticleEmitter + Explosion")
+InfoTab:AddSection({Name = "Desenvolvido Por"})
+InfoTab:AddLabel("Chora_Argumento & Petrix")
+InfoTab:AddLabel("Discord: https://discord.gg/7dkp6uhYNb")
+InfoTab:AddSection({Name = "Alvo"})
+InfoTab:AddLabel("Nome: TranspBox")
+InfoTab:AddLabel("Local: Workspace.GrabStuff")
+InfoTab:AddLabel("Posicao: -25705.14, 31.83, -5854.22")
 
--- [ABA: CRÉDITOS]
-local CreditsTab = Window:CreateTab("👨‍💻 Créditos", 0)
+-- ===== ABA CREDITOS =====
+CreditsTab:AddSection({Name = "Desenvolvedores"})
+CreditsTab:AddLabel("Chora_Argumento")
+CreditsTab:AddLabel("Petrix")
+CreditsTab:AddLabel("")
+CreditsTab:AddSection({Name = "Bibliotecas"})
+CreditsTab:AddLabel("Orion Library - Menu UI (substituiu Rayfield)")
+CreditsTab:AddLabel("")
+CreditsTab:AddSection({Name = "Links"})
+CreditsTab:AddLabel("Discord: https://discord.gg/7dkp6uhYNb")
+CreditsTab:AddLabel("YouTube: https://www.youtube.com/@ChoraArgumento")
 
-CreditsTab:CreateSection("🎮 Desenvolvedores")
-CreditsTab:CreateLabel("👨‍💻 Chora_Argumento")
-CreditsTab:CreateLabel("👨‍💻 Petrix")
-CreditsTab:CreateLabel("")
-CreditsTab:CreateSection("📚 Bibliotecas")
-CreditsTab:CreateLabel("• Rayfield - Menu UI")
-CreditsTab:CreateLabel("")
-CreditsTab:CreateSection("🔗 Links")
-CreditsTab:CreateLabel("📱 Discord: https://discord.gg/7dkp6uhYNb")
-CreditsTab:CreateLabel("📺 YouTube: https://www.youtube.com/@ChoraArgumento")
-
-CreditsTab:CreateButton({
-    Name = "📋 COPIAR LINK DO DISCORD",
+CreditsTab:AddButton({
+    Name = "COPIAR LINK DO DISCORD",
+    Description = "Copia o link do servidor Discord",
     Callback = function()
-        local link = "https://discord.gg/7dkp6uhYNb"
-        pcall(function()
-            setclipboard(link)
-        end)
-        Rayfield:Notify({
-            Title = "📋 Copiado!",
-            Content = "Link do Discord copiado!",
-            Duration = 2
-        })
-    end,
+        pcall(function() setclipboard("https://discord.gg/7dkp6uhYNb") end)
+        OrionLib:MakeNotification({Name = "Copiado!", Content = "Link do Discord copiado!", Image = "rbxassetid://4483345998", Time = 2})
+    end
 })
 
-CreditsTab:CreateButton({
-    Name = "⭐ AVALIAR SCRIPT",
-    Callback = function()
-        Rayfield:Notify({
-            Title = "⭐ Obrigado!",
-            Content = "Avalie o script no ScriptBlox!",
-            Duration = 3
-        })
-    end,
-})
-
-CreditsTab:CreateSection("⚠️ Aviso Importante")
-CreditsTab:CreateLabel("📢 ESTE PROGRAMA FOI DESENVOLVIDO EXCLUSIVAMENTE")
-CreditsTab:CreateLabel("📢 PARA FINS DE ENTRETENIMENTO E APRENDIZADO.")
-CreditsTab:CreateLabel("")
-CreditsTab:CreateLabel("🚫 NÃO UTILIZE ESTE SCRIPT PARA:")
-CreditsTab:CreateLabel("• Prejudicar a experiência de outros jogadores")
-CreditsTab:CreateLabel("• Obter vantagem competitiva desleal")
-CreditsTab:CreateLabel("• Praticar qualquer forma de assédio ou toxidade")
-CreditsTab:CreateLabel("• Violar os termos de serviço da plataforma")
-CreditsTab:CreateLabel("")
-CreditsTab:CreateLabel("✅ USE COM RESPONSABILIDADE")
-CreditsTab:CreateLabel("✅ RESPEITE OS DEMAIS JOGADORES")
-CreditsTab:CreateLabel("✅ DIVIRTA-SE DE FORMA SAUDÁVEL")
-
-CreditsTab:CreateLabel("")
-CreditsTab:CreateLabel("💀 Chora_Argumento & Petrix")
-CreditsTab:CreateLabel("💀 Obrigado por usar nosso script!")
-CreditsTab:CreateLabel("💀 2026 - Todos os direitos reservados")
+CreditsTab:AddSection({Name = "Aviso Importante"})
+CreditsTab:AddLabel("ESTE PROGRAMA FOI DESENVOLVIDO EXCLUSIVAMENTE")
+CreditsTab:AddLabel("PARA FINS DE ENTRETENIMENTO E APRENDIZADO.")
+CreditsTab:AddLabel("")
+CreditsTab:AddLabel("NAO UTILIZE ESTE SCRIPT PARA:")
+CreditsTab:AddLabel("Prejudicar a experiencia de outros jogadores")
+CreditsTab:AddLabel("Obter vantagem competitiva desleal")
+CreditsTab:AddLabel("Praticar qualquer forma de assedio ou toxidade")
+CreditsTab:AddLabel("Violar os termos de servico da plataforma")
+CreditsTab:AddLabel("")
+CreditsTab:AddLabel("USE COM RESPONSABILIDADE")
+CreditsTab:AddLabel("RESPEITE OS DEMAIS JOGADORES")
+CreditsTab:AddLabel("DIVIRTA-SE DE FORMA SAUDAVEL")
+CreditsTab:AddLabel("")
+CreditsTab:AddLabel("Chora_Argumento & Petrix")
+CreditsTab:AddLabel("Obrigado por usar nosso script!")
+CreditsTab:AddLabel("2026 - Todos os direitos reservados")
 
 -- =============================================================================
--- [10] DAEMONS E THREADS ASSÍNCRONAS
+-- [10] KEYBIND PRA OCULTAR/MOSTRAR UI
+-- =============================================================================
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.K then
+        Window:Toggle()
+    end
+end)
+
+-- =============================================================================
+-- [11] DAEMONS
 -- =============================================================================
 
 RunService.Heartbeat:Connect(function()
@@ -947,49 +765,36 @@ RunService.Heartbeat:Connect(function()
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         if rootPart and PosLabel then
             local pos = rootPart.Position
-            PosLabel:Set(string.format("📍 Posição atual: %.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z))
+            PosLabel:Set(string.format("Posicao atual: %.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z))
         end
-
         if UltimaPosLabel then
             if ultimaPosicao then
-                UltimaPosLabel:Set(string.format("📌 Última posição: %.1f, %.1f, %.1f", ultimaPosicao.X, ultimaPosicao.Y, ultimaPosicao.Z))
+                UltimaPosLabel:Set(string.format("Ultima posicao: %.1f, %.1f, %.1f", ultimaPosicao.X, ultimaPosicao.Y, ultimaPosicao.Z))
             else
-                UltimaPosLabel:Set("📌 Última posição: Nenhuma armazenada.")
+                UltimaPosLabel:Set("Ultima posicao: Nenhuma armazenada.")
             end
         end
-
-        if #grabbedParts > 0 then
-            limparPecasFantasma()
-        end
+        if #grabbedParts > 0 then limparPecasFantasma() end
     end)
-    if not success and err then
-        warn("[MEC BR] Heartbeat error: " .. tostring(err))
-    end
+    if not success and err then warn("[MEC BR] Heartbeat error: " .. tostring(err)) end
 end)
 
--- Atualização periódica da pilha pra manter sincronia
 task.spawn(function()
     while true do
         task.wait(2)
-        if isWelded and #grabbedParts > 0 then
-            pcall(atualizarPilha)
-        end
+        if isWelded and #grabbedParts > 0 then pcall(atualizarPilha) end
     end
 end)
 
 -- =============================================================================
--- [11] LIMPEZA AO RENASCER
+-- [12] LIMPEZA
 -- =============================================================================
 LocalPlayer.CharacterAdded:Connect(function()
     isWelded = false
     puxando = false
     entregando = false
-
     for _, part in ipairs(grabbedParts) do
-        if welds[part] then
-            welds[part]:Destroy()
-            welds[part] = nil
-        end
+        if welds[part] then welds[part]:Destroy(); welds[part] = nil end
         if part and part.Parent then
             part.CanCollide = true
             part.Massless = false
@@ -1001,56 +806,23 @@ LocalPlayer.CharacterAdded:Connect(function()
     welds = {}
 end)
 
--- Cleanup global (se o script for interrompido)
-local function onCleanup()
-    isWelded = false
-    puxando = false
-    entregando = false
-
-    for _, part in ipairs(grabbedParts) do
-        if welds[part] then
-            pcall(function() welds[part]:Destroy() end)
-            welds[part] = nil
-        end
-    end
-    grabbedParts = {}
-    welds = {}
-end
-
-pcall(function()
-    if LocalPlayer.OnCleanup then
-        LocalPlayer.OnCleanup:Connect(onCleanup)
-    end
-end)
-
 -- =============================================================================
--- [12] INICIALIZAÇÃO
+-- [13] INICIALIZACAO
 -- =============================================================================
 print("========================================")
-print("🚀 MEC BR ULTIMATE - v3.8")
+print("🚀 MEC BR ULTIMATE - v3.8 (Orion Edition)")
 print("👨‍💻 Desenvolvido por: Chora_Argumento & Petrix")
 print("========================================")
+print("[SYSTEM] UI Framework: Orion Library")
 print("[SYSTEM] Magnet System: Weld (Solda) - TranspBox Only")
 print("[SYSTEM] Teleport System: Vector3 CFrame")
 print("[SYSTEM] Sound Engine: RbxSoundID")
 print("[SYSTEM] Particle FX: ParticleEmitter + Explosion")
 print("[SYSTEM] Coordenadas carregadas: " .. #coordenadas)
-print("[SYSTEM] Alvo: TranspBox em Workspace.GrabStuff")
 print("========================================")
-print("⚠️ AVISO: Este script é para fins de entretenimento")
-print("⚠️ Não utilize para prejudicar outros jogadores")
-print("========================================")
-print("💀 Obrigado por usar nosso script!")
+print("Pressione K para ocultar/exibir a UI")
 print("========================================")
 
-Rayfield:Notify({
-    Title = "🚀 MEC BR ULTIMATE v3.8",
-    Content = "📦 Desenvolvido por Chora_Argumento & Petrix",
-    Duration = 5
-})
-
-Rayfield:Notify({
-    Title = "⚠️ AVISO IMPORTANTE",
-    Content = "Use com responsabilidade! Respeite os jogadores!",
-    Duration = 5
-})
+OrionLib:MakeNotification({Name = "🚀 MEC BR ULTIMATE v3.8", Content = "Portado para Orion Library por Chora_Argumento & Petrix", Image = "rbxassetid://4483345998", Time = 5})
+OrionLib:MakeNotification({Name = "AVISO IMPORTANTE", Content = "Use com responsabilidade! Respeite os jogadores!", Image = "rbxassetid://4483345998", Time = 5})
+OrionLib:Init()
